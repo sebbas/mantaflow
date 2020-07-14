@@ -287,6 +287,9 @@ int readObjFile(const std::string& name, Mesh* mesh, bool append) {
 		return 0;
 	}
 
+	const Real dx = mesh->getParent()->getDx();
+	const Vec3 gs = toVec3(mesh->getParent()->getGridSize());
+
 	if (!append)
 		mesh->clear();
 	int nodebase = mesh->numNodes();
@@ -315,6 +318,9 @@ int readObjFile(const std::string& name, Mesh* mesh, bool append) {
 			// vertex
 			Node n;
 			ifs >> n.pos.x >> n.pos.y >> n.pos.z;
+			// convert to grid space
+			n.pos /= dx;
+			n.pos += gs * 0.5;
 			mesh->addNode(n);
 		} else if (id == "g") {
 			// group
