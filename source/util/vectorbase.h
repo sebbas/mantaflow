@@ -410,8 +410,8 @@ inline S sum ( const Vector3D<S>& v ) {
 }
 
 //! Get absolute representation of vector, allow use of int, Real too
-inline Real abs ( const Real v ) { return fabs(v); }
-inline Real abs ( const int v ) { return abs(v); }
+inline Real abs ( const Real v ) { return std::fabs(v); }
+inline int abs ( const int v ) { return std::abs(v); }
 
 template<class S>
 inline Vector3D<S> abs( const Vector3D<S>& v ) {
