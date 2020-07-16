@@ -294,43 +294,23 @@ PYTHON() void addTestParts( BasicParticleSystem& parts, int num)
 }
 
 //! calculate the difference between two pdata fields (note - slow!, not parallelized)
-PYTHON() Real pdataMaxDiff ( const ParticleDataBase* a, const ParticleDataBase* b )
-{    
-	double maxVal = 0.;
-	//debMsg(" PD "<< a->getType()<<"  as"<<a->getSizeSlow()<<"  bs"<<b->getSizeSlow() , 1);
+template<class T>
+Real getPdataMaxDiff(const ParticleDataImpl<T>* a, const ParticleDataImpl<T>* b)
+{
 	assertMsg(a->getType()     == b->getType()    , "pdataMaxDiff problem - different pdata types!");
 	assertMsg(a->getSizeSlow() == b->getSizeSlow(), "pdataMaxDiff problem - different pdata sizes!");
-	
-	if (a->getType() & ParticleDataBase::TypeReal) 
-	{
-                const ParticleDataImpl<Real>& av = *dynamic_cast<const ParticleDataImpl<Real>*>(a);
-                const ParticleDataImpl<Real>& bv = *dynamic_cast<const ParticleDataImpl<Real>*>(b);
-		FOR_PARTS(av) {
-			maxVal = std::max(maxVal, (double)fabs( av[idx]-bv[idx] ));
-		}
-	} else if (a->getType() & ParticleDataBase::TypeInt) 
-	{
-                const ParticleDataImpl<int>& av = *dynamic_cast<const ParticleDataImpl<int>*>(a);
-                const ParticleDataImpl<int>& bv = *dynamic_cast<const ParticleDataImpl<int>*>(b);
-		FOR_PARTS(av) {
-			maxVal = std::max(maxVal, (double)fabs( (double)av[idx]-bv[idx] ));
-		}
-	} else if (a->getType() & ParticleDataBase::TypeVec3) {
-                const ParticleDataImpl<Vec3>& av = *dynamic_cast<const ParticleDataImpl<Vec3>*>(a);
-                const ParticleDataImpl<Vec3>& bv = *dynamic_cast<const ParticleDataImpl<Vec3>*>(b);
-		FOR_PARTS(av) {
-			double d = 0.;
-			for(int c=0; c<3; ++c) { 
-				d += fabs( (double)av[idx][c] - (double)bv[idx][c] );
-			}
-			maxVal = std::max(maxVal, d );
-		}
-	} else {
-		errMsg("pdataMaxDiff: Grid Type is not supported (only Real, Vec3, int)");    
-	}
 
+	Real maxVal = 0.;
+	FOR_PARTS(*a) {
+		T diff = a->get(idx) - b->get(idx);
+		Real s = (Real) sum(abs(diff));
+		maxVal = std::max(maxVal, s);
+	}
 	return maxVal;
 }
+PYTHON() Real pdataMaxDiff(const ParticleDataImpl<Real>* a, const ParticleDataImpl<Real>* b) { return getPdataMaxDiff(a, b); }
+PYTHON() Real pdataMaxDiffInt(const ParticleDataImpl<int>* a, const ParticleDataImpl<int>* b) { return getPdataMaxDiff(a, b); }
+PYTHON() Real pdataMaxDiffVec3(const ParticleDataImpl<Vec3>* a, const ParticleDataImpl<Vec3>* b) { return getPdataMaxDiff(a, b); }
 
 
 //! calculate center of mass given density grid, for re-centering

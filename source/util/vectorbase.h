@@ -399,6 +399,29 @@ inline Real normSquare(const Real v) { return square(v); }
 inline Real norm(const int v) { return abs(v); }
 inline Real normSquare(const int v) { return square(v); }
 
+//! Compute sum of all components, allow use of int, Real too
+template<class S>
+inline S sum ( const S v ) {
+	return v;
+}
+template<class S>
+inline S sum ( const Vector3D<S>& v ) {
+	return v.x + v.y + v.z;
+}
+
+//! Get absolute representation of vector, allow use of int, Real too
+inline Real abs ( const Real v ) { return fabs(v); }
+inline Real abs ( const int v ) { return abs(v); }
+
+template<class S>
+inline Vector3D<S> abs( const Vector3D<S>& v ) {
+	Vector3D<S> cp(v.x, v.y, v.z);
+	for (int i = 0; i < 3; ++i) {
+		if (cp[i] < 0) cp[i] *= (-1.0);
+	}
+	return cp;
+}
+
 //! Returns a normalized vector
 template<class S>
 inline Vector3D<S> getNormalized ( const Vector3D<S>& v ) {

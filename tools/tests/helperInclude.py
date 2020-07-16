@@ -159,8 +159,12 @@ def doTestGrid( file , name, parent , grid, threshold=0, thresholdStrict=0, inve
 			errVal = gridMaxDiffVec3( grid, compareTmpGrid )
 		elif ( grid._class == "Grid" and grid._T == "int" ):
 			errVal = gridMaxDiffInt ( grid, compareTmpGrid )
-		elif ( grid._class == "ParticleDataImpl" ):
+		elif ( grid._class == "ParticleDataImpl" and grid._T == "Real" ):
 			errVal = pdataMaxDiff ( grid, compareTmpGrid )
+		elif ( grid._class == "ParticleDataImpl" and grid._T == "Vec3" ):
+			errVal = pdataMaxDiffVec3 ( grid, compareTmpGrid )
+		elif ( grid._class == "ParticleDataImpl" and grid._T == "int" ):
+			errVal = pdataMaxDiffInt ( grid, compareTmpGrid )
 		elif ( grid._class == "Grid4d" and grid._T == "Real" ):
 			errVal = grid4dMaxDiff    ( grid, compareTmpGrid )
 		elif ( grid._class == "Grid4d" and grid._T == "int" ):
