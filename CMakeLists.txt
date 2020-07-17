@@ -70,6 +70,10 @@ OPTION(OPENVDB_BLOSC "Enable OpenVDB Blosc compression" OFF)
 # further options for blender integration
 OPTION(BLENDER "Compile for Blender integration" OFF)
 
+# use dependencies from this repository or not
+OPTION(NO_ZLIB "Do not use zlib version from this repository" OFF)
+OPTION(NO_CNPY "Do not use cnpy version from this repository" OFF)
+
 # generate static library
 OPTION(BUILD_STATIC "Enable building static library" OFF)
 # special option to compile manta without any python, disables python glue code (while trying to keep as much of the rest as possible)
@@ -505,12 +509,23 @@ endif()
 
 #******************************************************************************
 # Z lib compression
-if(1)
+if(NO_ZLIB)
+	# try to locate and use system libs
+	include(FindZLIB)
+	if(ZLIB_FOUND)
+		list(APPEND INCLUDE_PATHS ${ZLIB_INCLUDE_DIR})
+		list(APPEND F_LIBS ${ZLIB_LIBRARIES})
+		message("Found system Zlib")
+	else()
+		message("Warning! Could not find Zlib. Install zlib or use included zlib version.")
+		add_definitions(-DNO_ZLIB=1)
+	endif()
+else()
 	# default: build from own sources
 	set(ZLIB_SRC adler32.c compress.c crc32.c deflate.c gzclose.c gzlib.c gzread.c gzwrite.c
 				 inflate.c infback.c inftrees.c inffast.c trees.c uncompr.c zutil.c)
 	foreach(it ${ZLIB_SRC})
-		list(APPEND SILENT_SOURCES dependencies/zlib-1.2.8/${it}) 
+		list(APPEND SILENT_SOURCES dependencies/zlib-1.2.8/${it})
 	endforeach(it)
 
 	set(ZLIB_ADDFLAGS "-Dverbose=-1")
@@ -521,16 +536,7 @@ if(1)
 	set_source_files_properties(${SILENT_SOURCES} PROPERTIES COMPILE_FLAGS "${ZLIB_ADDFLAGS}")
 
 	list(APPEND INCLUDE_PATHS dependencies/zlib-1.2.8)
-endif()
-if(0)
-	# try to locate and use system libs
-	include(FindZLIB)
-	list(APPEND INCLUDE_PATHS ${ZLIB_INCLUDE_DIR})
-	list(APPEND F_LIBS ${ZLIB_LIBRARIES})
-endif()
-if(0)
-	# disable 
-	add_definitions(-DNO_ZLIB=1)
+	message("Using Zlib version from this repository")
 endif()
 
 # increase FP precision?
@@ -540,14 +546,22 @@ endif()
 
 #******************************************************************************
 # cnpy support (import/export numpy arrays)
-if(TRUE)
-	# default: build from own sources
-	list(APPEND SILENT_SOURCES dependencies/cnpy/cnpy.cpp)
+if(NO_CNPY)
+	message("Building without dependency cnpy. Numpy IO functionality will not be available.")
+	add_definitions(-DNO_CNPY=1)
+else()
+	if(NO_ZLIB AND NOT ZLIB_FOUND)
+		message(FATAL_ERROR "Cannot build with cnpy but without zlib!")
+	else()
+		message("Building with dependency cnpy.")
+		# default: build from own sources
+		list(APPEND SILENT_SOURCES dependencies/cnpy/cnpy.cpp)
 
-	set(CNPY_ADDFLAGS "-std=c++11")
-	set_source_files_properties(dependencies/cnpy/cnpy.cpp PROPERTIES COMPILE_FLAGS "${CNPY_ADDFLAGS}")
+		set(CNPY_ADDFLAGS "-std=c++11")
+		set_source_files_properties(dependencies/cnpy/cnpy.cpp PROPERTIES COMPILE_FLAGS "${CNPY_ADDFLAGS}")
 
-	list(APPEND INCLUDE_PATHS dependencies/cnpy)
+		list(APPEND INCLUDE_PATHS dependencies/cnpy)
+	endif()
 endif()
 
 #******************************************************************************

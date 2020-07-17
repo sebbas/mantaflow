@@ -19,8 +19,9 @@
 
 #if NO_ZLIB != 1
 extern "C" {
-# include <zlib.h>
+#	include <zlib.h>
 }
+#endif
 
 #if defined(WIN32) || defined(_WIN32)
 #	include <windows.h>
@@ -43,18 +44,22 @@ static wstring stringToWstring(const char *str)
 
 void *safeGzopen(const char *filename, const char *mode)
 {
+#	if NO_ZLIB != 1
 	gzFile gzfile;
 
-# if defined(WIN32) || defined(_WIN32)
+#	if defined(WIN32) || defined(_WIN32)
 	wstring filenameWide = stringToWstring(filename);
 	gzfile = gzopen_w(filenameWide.c_str(), mode);
-# else
+#	else
 	gzfile = gzopen(filename, mode);
-# endif
+#	endif
 
 	return gzfile;
+#	else
+	debMsg("safeGzopen not supported without zlib", 1);
+	return nullptr;
+#	endif // NO_ZLIB != 1
 }
-#endif // NO_ZLIB != 1
 
 # if defined(OPENVDB)
 // Convert from OpenVDB value to Manta value.
