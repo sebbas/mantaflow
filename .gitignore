@@ -10,3 +10,6 @@ waveletNoiseTileDouble.bin
 build
 doc
 tensorflow/mantaGen/datasets
+
+.DS_Store
+Desktop.ini
