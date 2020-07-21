@@ -143,14 +143,16 @@ public:
     
     // plugins
     PYTHON() void clear();
-    PYTHON() void load (std::string name, bool append = false);
     PYTHON() void fromShape (Shape& shape, bool append = false);
-    PYTHON() void save (std::string name);
     PYTHON() void advectInGrid(FlagGrid& flags, MACGrid& vel, int integrationMode);
     PYTHON() void scale(Vec3 s);
     PYTHON() void offset(Vec3 o);
 	PYTHON() void rotate(Vec3 thetas);
     PYTHON() void computeVelocity(Mesh& oldMesh, MACGrid& vel);
+
+	//! file io
+	PYTHON() int load (std::string name, bool append = false);
+	PYTHON() int save (std::string name);
 
 	PYTHON() void computeLevelset(LevelsetGrid& levelset, Real sigma, Real cutoff=-1.);
 	PYTHON() LevelsetGrid getLevelset(Real sigma, Real cutoff = -1.);
@@ -353,8 +355,8 @@ public:
 	PYTHON() void printMdata(IndexInt start=-1, IndexInt stop=-1, bool printIndex=false);
 
 	//! file io
-	PYTHON() void save(const std::string name);
-	PYTHON() void load(const std::string name);
+	PYTHON() int save(const std::string name);
+	PYTHON() int load(const std::string name);
 
 	//! get data pointer of mesh data
 	PYTHON() std::string getDataPointer();
