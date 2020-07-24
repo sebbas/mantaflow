@@ -81,6 +81,9 @@ public:
 	//! access one of the fields
 	ParticleDataBase* getPdata(int i) { return mPartData[i]; }
 
+	//! expose maximum number of particles to python
+	PYTHON(name=maxParticles) int mMaxParticles;
+
 protected:  
 	//! new particle candidates
 	std::vector<Vec3> mNewBufferPos;
@@ -624,27 +627,62 @@ void ParticleSystem<S>::compress() {
 template<class S>
 void ParticleSystem<S>::insertBufferedParticles() {
 	// clear new flag everywhere
-	for(IndexInt i=0; i<(IndexInt)mData.size(); ++i) mData[i].flag &= ~PNEW;
+	for (IndexInt i=0; i<(IndexInt)mData.size(); ++i) mData[i].flag &= ~PNEW;
 
-	if(mNewBufferPos.size()==0) return;
-	IndexInt newCnt = mData.size();
-	resizeAll(newCnt + mNewBufferPos.size());
+	if(mNewBufferPos.empty()) return;
+	IndexInt bufferSize = mNewBufferPos.size();
+	IndexInt partsSize = mData.size();
 
-	for(IndexInt i=0; i<(IndexInt)mNewBufferPos.size(); ++i) {
-		int flag = (mNewBufferFlag.size() > 0) ? mNewBufferFlag[i] : 0;
-		// note, other fields are not initialized here...
-		mData[newCnt].pos  = mNewBufferPos[i];
-		mData[newCnt].flag = PNEW | flag;
+	if (mMaxParticles>0)
+		assertMsg(mMaxParticles>=partsSize, "Particle system cannot contain more particles that the maximum allowed number");
+
+	// max number of new particles that can be inserted, adjusted buffer size when using maxParticles field
+	IndexInt numNewParts = (mMaxParticles>0) ? mMaxParticles - mData.size() : bufferSize;
+	if (numNewParts > bufferSize) numNewParts = bufferSize; // upper clamp
+
+	assertMsg(numNewParts>=0, "Must not have negative number of new particles");
+
+	// new size of particle system
+	IndexInt newSize = mData.size() + numNewParts;
+	if (mMaxParticles>0)
+		assertMsg(newSize<=mMaxParticles, "Particle system cannot contain more particles that the maximum allowed number");
+	resizeAll(newSize);
+
+	int insertFlag;
+	Vec3 insertPos;
+	static RandomStream mRand(9832);
+	for (IndexInt i=0; i<numNewParts; ++i) {
+
+		// get random index in newBuffer vector
+		// we are inserting particles randomly so that they are sampled uniformly in the fluid region
+		// otherwise, regions of fluid can remain completely empty once mData.size() == maxParticles is reached.
+		int randIndex = floor(mRand.getReal() * mNewBufferPos.size());
+
+		// get elements from new buffers with random index
+		std::swap(mNewBufferPos[randIndex], mNewBufferPos.back());
+		insertPos = mNewBufferPos.back();
+		mNewBufferPos.pop_back();
+
+		insertFlag = 0;
+		if (!mNewBufferFlag.empty()) {
+			std::swap(mNewBufferFlag[randIndex], mNewBufferFlag.back());
+			insertFlag = mNewBufferFlag.back();
+			mNewBufferFlag.pop_back();
+		}
+
+		mData[partsSize].pos  = insertPos;
+		mData[partsSize].flag = PNEW | insertFlag;
+
 		// now init pdata fields from associated grids...
-		for(IndexInt pd=0; pd<(IndexInt)mPdataReal.size(); ++pd) 
-			mPdataReal[pd]->initNewValue(newCnt, mNewBufferPos[i] );
-		for(IndexInt pd=0; pd<(IndexInt)mPdataVec3.size(); ++pd) 
-			mPdataVec3[pd]->initNewValue(newCnt, mNewBufferPos[i] );
-		for(IndexInt pd=0; pd<(IndexInt)mPdataInt.size(); ++pd) 
-			mPdataInt[pd]->initNewValue(newCnt, mNewBufferPos[i] );
-		newCnt++;
+		for(IndexInt pd=0; pd<(IndexInt)mPdataReal.size(); ++pd)
+			mPdataReal[pd]->initNewValue(partsSize, insertPos );
+		for(IndexInt pd=0; pd<(IndexInt)mPdataVec3.size(); ++pd)
+			mPdataVec3[pd]->initNewValue(partsSize, insertPos );
+		for(IndexInt pd=0; pd<(IndexInt)mPdataInt.size(); ++pd)
+			mPdataInt[pd]->initNewValue(partsSize, insertPos );
+		partsSize++;
 	}
-	if(mNewBufferPos.size()>0) debMsg("Added & initialized "<<(IndexInt)mNewBufferPos.size()<<" particles", 2); // debug info
+	debMsg("Added & initialized "<< numNewParts <<" particles", 2); // debug info
 	mNewBufferPos.clear();
 	mNewBufferFlag.clear();
 }
