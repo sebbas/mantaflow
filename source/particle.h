@@ -58,6 +58,9 @@ public:
 	//! add a position as potential candidate for new particle (todo, make usable from parallel threads)
 	inline void addBuffered(const Vec3& pos, int flag=0);
 
+	virtual void resize(IndexInt size)    { assertMsg( false , "Dont use, override..."); return; }
+	virtual void resizeAll(IndexInt size) { assertMsg( false , "Dont use, override..."); return; }
+
 	//! particle data functions
 
 	//! create a particle data object
@@ -141,8 +144,10 @@ public:
 	void doCompress() { if ( mDeletes > mDeleteChunk) compress(); }
 	//! insert buffered positions as new particles, update additional particle data
 	void insertBufferedParticles();
+	//! resize only the data vector, only use if you know what you're doing, otherwise use resizeAll()
+	virtual void resize(IndexInt size) { mData.resize(size); }
 	//! resize data vector, and all pdata fields
-	void resizeAll(IndexInt newsize);
+	virtual void resizeAll(IndexInt size);
 	
 	//! adding and deleting
 	inline void kill(IndexInt idx);
@@ -242,9 +247,6 @@ public:
 PYTHON() class ParticleIndexSystem : public ParticleSystem<ParticleIndexData> {
 public:
 	PYTHON() ParticleIndexSystem(FluidSolver* parent) : ParticleSystem<ParticleIndexData>(parent) {};
-	
-	//! we only need a resize function...
-	void resize(IndexInt size) { mData.resize(size); }
 };
 
 

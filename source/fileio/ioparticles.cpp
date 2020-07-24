@@ -281,6 +281,7 @@ int readPdataUni(const std::string& name, ParticleDataImpl<T>* pdata ) {
 	if (!strcmp(ID, "PD01")) {
 		UniPartHeader head;
 		assertMsg (gzread(gzf, &head, sizeof(UniPartHeader)) == sizeof(UniPartHeader), "can't read file, no header present");
+		pdata->getParticleSys()->resize(head.dim); // ensure that parent particle system has same size
 		pdata->resize(head.dim);
 
 		assertMsg (head.dim == pdata->size() , "pdata size doesn't match");
