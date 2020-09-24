@@ -78,10 +78,9 @@ public:
 	inline int index(int i, int j, int k, int unused) const { return index(i,j,k); }
 	inline bool isInBounds(int i,int j, int k, int t, int bnd) const { if(t!=0) return false; return isInBounds( Vec3i(i,j,k), bnd ); }
 
-#ifdef BLENDER
 	//! expose name field to Python for Blender
 	PYTHON() void setName(const std::string& name) { mName = name; }
-#endif
+
 protected:
 	
 	GridType mType;
