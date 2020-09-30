@@ -348,24 +348,28 @@ public:
 	~RandomStream() {}
 
 	/*! get a random number from the stream */
-	inline double getDouble( void ) { return mtr.rand(); };
-	inline float  getFloat ( void ) { return (float)mtr.rand(); };
-
-	inline float  getFloat( float min, float max ) { return mtr.rand(max-min) + min; };
 	inline float  getRandNorm( float mean, float var) { return mtr.randNorm(mean, var); };
 
 	#if FLOATINGPOINT_PRECISION==1
-	inline Real getReal()           { return getFloat(); }
+	inline Real getReal()                       { return getFloat(); }
+	inline Real getReal( float min, float max ) { return getFloat( min, max); }
 
 	#else
-	inline Real getReal()           { return getDouble(); }
+	inline Real getReal()                         { return getDouble(); }
+	inline Real getReal( double min, double max ) { return getDouble( min, max); }
 	#endif
 
 	inline Vec3   getVec3 ()        { Real a=getReal(), b=getReal(), c=getReal(); return Vec3(a,b,c); }
 	inline Vec3   getVec3Norm ()    { Vec3 a=getVec3(); normalize(a); return a; }
 
 private: 
-	MTRand mtr; 
+	MTRand mtr;
+
+	inline double getDouble( void ) { return mtr.rand(); };
+	inline float  getFloat ( void ) { return (float)mtr.rand(); };
+
+	inline double getDouble( double min, double max ) { return mtr.rand(max-min) + min; };
+	inline float  getFloat( float min, float max ) { return (float) (mtr.rand(max-min) + min); };
 };
 
 
