@@ -113,7 +113,10 @@ void KnApplyEmission(const FlagGrid& flags, Grid<Real>& target, const Grid<Real>
 	// and if emission texture is given, only apply emission when some emission is present at cell (important for emit from particles)
 	bool isInflow = (type & FlagGrid::TypeInflow && flags.isInflow(i,j,k));
 	bool isOutflow = (type & FlagGrid::TypeOutflow && flags.isOutflow(i,j,k));
-	if ( (type && !isInflow && !isOutflow) && (emissionTexture && !(*emissionTexture)(i,j,k)) ) return;
+
+	if ( type && !isInflow) return;
+	if ( type && isOutflow) return;
+	if ( emissionTexture && !(*emissionTexture)(i,j,k)) return;
 
 	if (isAbsolute)
 		target(i,j,k) = source(i,j,k);
