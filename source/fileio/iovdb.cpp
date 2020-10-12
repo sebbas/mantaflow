@@ -53,7 +53,7 @@ void importVDB(typename GridType::Ptr from, Grid<T>* to) {
 
 template<class VDBType, class T>
 void importVDB(VDBType vdbValue, ParticleDataImpl<T>* to, int index, float voxelSize) {
-	(void) voxelSize; // Unused
+	unusedParameter(voxelSize); // Unused for now
 	T toMantaValue;
 	convertFrom(vdbValue, &toMantaValue);
 	to->set(index, toMantaValue);
@@ -379,10 +379,10 @@ int readObjectsVDB(const string& filename, std::vector<PbClass*>* objects, float
 		file.open();
 		gridsVDB = *(file.getGrids());
 		openvdb::MetaMap::Ptr metadata = file.getMetadata();
-		(void) metadata; // Unused for now
+		unusedParameter(metadata); // Unused for now
 	}
 	catch (const openvdb::IoError &e) {
-		(void) e; // Unused for now
+		unusedParameter(e); // Unused for now
 		debMsg("readObjectsVDB: Could not open vdb file " << filename, 1);
 		file.close();
 		return 0;
