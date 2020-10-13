@@ -23,6 +23,11 @@
 #define COMPRESSION_ZIP 1
 #define COMPRESSION_BLOSC 2
 
+// OpenVDB precision flags
+#define PRECISION_FULL 0
+#define PRECISION_HALF 1
+#define PRECISION_MINI 2
+
 namespace Manta {
 
 // Forward declations
@@ -60,7 +65,7 @@ int writeGridsVol(const std::string& name, std::vector<PbClass*>* grids);
 int writeGridsTxt(const std::string& name, std::vector<PbClass*>* grids);
 
 // OpenVDB
-int writeObjectsVDB(const std::string& filename, std::vector<PbClass*>* objects, float scale=1.0, bool skipDeletedParts=false, int compression=COMPRESSION_ZIP, bool precisionHalf=true);
+int writeObjectsVDB(const std::string& filename, std::vector<PbClass*>* objects, float scale=1.0, bool skipDeletedParts=false, int compression=COMPRESSION_ZIP, int precision=PRECISION_HALF);
 int readObjectsVDB(const std::string& filename, std::vector<PbClass*>* objects, float scale=1.0);
 
 // Numpy

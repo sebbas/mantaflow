@@ -60,3 +60,7 @@ Compression_None = 0
 Compression_Zip = 1
 Compression_Blosc = 2
 
+# OpenVDB precision flags
+Precision_Full = 0
+Precision_Half = 1
+Precision_Mini = 2
