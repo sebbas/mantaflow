@@ -426,21 +426,27 @@ int readObjectsVDB(const string& filename, std::vector<PbClass*>* objects, float
 			if (GridBase* mantaGrid = dynamic_cast<GridBase*>(*iter)) {
 				
 				if (mantaGrid->getType() & GridBase::TypeInt) {
-					debMsg("Reading into grid '" << mantaGrid->getName() << "' from int grid '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 					openvdb::Int32Grid::Ptr vdbIntGrid = openvdb::gridPtrCast<openvdb::Int32Grid>(vdbGrid);
+					if (!vdbIntGrid) continue; // Sanity check: Cast can fail if onlyGrid is true but object count > 1
+
 					Grid<int>* mantaIntGrid = (Grid<int>*) mantaGrid;
+					debMsg("Reading into grid '" << mantaGrid->getName() << "' from int grid '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 					importVDB<openvdb::Int32Grid, int>(vdbIntGrid, mantaIntGrid);
 				}
 				else if (mantaGrid->getType() & GridBase::TypeReal) {
-					debMsg("Reading into grid '" << mantaGrid->getName() << "' from real grid '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 					openvdb::FloatGrid::Ptr vdbFloatGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(vdbGrid);
+					if (!vdbFloatGrid) continue; // Sanity check: Cast can fail if onlyGrid is true but object count > 1
+
 					Grid<Real>* mantaRealGrid = (Grid<Real>*) mantaGrid;
+					debMsg("Reading into grid '" << mantaGrid->getName() << "' from real grid '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 					importVDB<openvdb::FloatGrid, Real>(vdbFloatGrid, mantaRealGrid);
 				}
 				else if (mantaGrid->getType() & GridBase::TypeVec3) {
-					debMsg("Reading into grid '" << mantaGrid->getName() << "' from vec3 grid '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 					openvdb::Vec3SGrid::Ptr vdbVec3Grid = openvdb::gridPtrCast<openvdb::Vec3SGrid>(vdbGrid);
+					if (!vdbVec3Grid) continue; // Sanity check: Cast can fail if onlyGrid is true but object count > 1
+
 					Grid<Vec3>* mantaVec3Grid = (Grid<Vec3>*) mantaGrid;
+					debMsg("Reading into grid '" << mantaGrid->getName() << "' from vec3 grid '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 					importVDB<openvdb::Vec3SGrid, Vec3>(vdbVec3Grid, mantaVec3Grid);
 				}
 				else {
@@ -449,11 +455,12 @@ int readObjectsVDB(const string& filename, std::vector<PbClass*>* objects, float
 				}
 			}
 			else if (BasicParticleSystem* mantaPP = dynamic_cast<BasicParticleSystem*>(*iter)) {
-				debMsg("Reading into particle system '" << mantaPP->getName() << "' from particle system '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 				openvdb::points::PointDataGrid::Ptr vdbPointGrid = openvdb::gridPtrCast<openvdb::points::PointDataGrid>(vdbGrid);
+				if (!vdbPointGrid) continue; // Sanity check: Cast can fail if onlyGrid is true but objects > 1
+
+				debMsg("Reading into particle system '" << mantaPP->getName() << "' from particle system '" << vdbGrid->getName() << "' in vdb file " << filename, 1);
 				importVDB(vdbPointGrid, mantaPP, pdbBuffer, voxelSize);
 				pdbBuffer.clear();
-
 			}
 			else {
 				errMsg("readObjectsVDB: Unsupported Python object. Cannot read from .vdb file " << filename);
