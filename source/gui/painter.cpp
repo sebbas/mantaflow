@@ -87,8 +87,8 @@ void LockedObjPainter::nextObject() {
 
 template<class T>
 GridPainter<T>::GridPainter(FlagGrid** flags, QWidget* par) 
-	: LockedObjPainter(par), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(NULL), 
-	  mFlags(flags), mInfo(NULL), mHide(false), mHideLocal(false), mDispMode(), mValScale()
+	: LockedObjPainter(par), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(nullptr),
+	  mFlags(flags), mInfo(nullptr), mHide(false), mHideLocal(false), mDispMode(), mValScale()
 {
 	mDim = 2; // Z plane
 	mPlane = 0;

@@ -417,7 +417,7 @@ PYTHON() void getSliceFrom4d(Grid4d<Real>& src, int srct, Grid<Real>& dst) {
 	}
 }
 //! slow helper to visualize tests, get a 3d slice of a 4d vec4 grid
-PYTHON() void getSliceFrom4dVec(Grid4d<Vec4>& src, int srct, Grid<Vec3>& dst, Grid<Real>* dstt=NULL) { 
+PYTHON() void getSliceFrom4dVec(Grid4d<Vec4>& src, int srct, Grid<Vec3>& dst, Grid<Real>* dstt=nullptr) {
 	const int bnd = 0;
 	if(! src.isInBounds(Vec4i(bnd,bnd,bnd,srct)) ) return;
 

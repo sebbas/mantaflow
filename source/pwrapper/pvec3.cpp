@@ -70,12 +70,12 @@ static PyMemberDef PbVec3Members[] = {
 	{(char*)"x", T_FLOAT, offsetof(PbVec3, data), 0, (char*)"X"},
 	{(char*)"y", T_FLOAT, offsetof(PbVec3, data)+sizeof(float), 0, (char*)"Y"},
 	{(char*)"z", T_FLOAT, offsetof(PbVec3, data)+sizeof(float)*2, 0, (char*)"Z"},
-	{NULL}  // Sentinel
+	{nullptr}  // Sentinel
 };
 
 static PyMethodDef PbVec3Methods[] = {
 	//{"name", (PyCFunction)Noddy_name, METH_NOARGS, "Return the name, combining the first and last name" },
-	{NULL}  // Sentinel
+	{nullptr}  // Sentinel
 };
 
 // operator overloads
@@ -226,7 +226,7 @@ static PyNumberMethods PbVec3NumberMethods = {
 #endif
 
 PyTypeObject PbVec3Type = {
-	PyVarObject_HEAD_INIT(NULL, 0)
+	PyVarObject_HEAD_INIT(nullptr, 0)
 	"manta.vec3",             /* tp_name */
 	sizeof(PbVec3),             /* tp_basicsize */
 	0,                         /* tp_itemsize */
@@ -285,7 +285,7 @@ struct PbVec4 {
 };
 
 static PyMethodDef PbVec4Methods[] = {
-	{NULL}  // Sentinel
+	{nullptr}  // Sentinel
 };
 
 static PyMemberDef PbVec4Members[] = {
@@ -293,7 +293,7 @@ static PyMemberDef PbVec4Members[] = {
 	{(char*)"y", T_FLOAT, offsetof(PbVec4, data)+sizeof(float)*1, 0, (char*)"Y"},
 	{(char*)"z", T_FLOAT, offsetof(PbVec4, data)+sizeof(float)*2, 0, (char*)"Z"},
 	{(char*)"t", T_FLOAT, offsetof(PbVec4, data)+sizeof(float)*3, 0, (char*)"T"},
-	{NULL}  // Sentinel
+	{nullptr}  // Sentinel
 };
 
 
@@ -333,7 +333,7 @@ static PyObject* PbVec4Repr(PbVec4* self) {
 }
 
 PyTypeObject PbVec4Type = {
-	PyVarObject_HEAD_INIT(NULL, 0)
+	PyVarObject_HEAD_INIT(nullptr, 0)
 	"manta.vec4",             /* tp_name */
 	sizeof(PbVec4),             /* tp_basicsize */
 	0,                         /* tp_itemsize */
@@ -343,7 +343,7 @@ PyTypeObject PbVec4Type = {
 	0,                         /* tp_setattr */
 	0,                         /* tp_reserved */
 	(reprfunc)PbVec4Repr,      /* tp_repr */
-	NULL, // &PbVec4NumberMethods,      /* tp_as_number */
+	nullptr, // &PbVec4NumberMethods,      /* tp_as_number */
 	0,                         /* tp_as_sequence */
 	0,                         /* tp_as_mapping */
 	0,                         /* tp_hash  */

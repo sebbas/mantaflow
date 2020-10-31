@@ -36,7 +36,7 @@ $TEMPLATE$ static PyObject* _W_$WRAPPER$ (PyObject* _self, PyObject* _linargs, P
 		FluidSolver *parent = _args.obtainParent();
 		bool noTiming = _args.getOpt<bool>("notiming", -1, 0);
 		pbPreparePlugin(parent, "$FUNCNAME$" , !noTiming );
-		PyObject *_retval = 0;
+		PyObject *_retval = nullptr;
 		{ 
 			ArgLocker _lock;
 			$ARGLOADER$
@@ -64,7 +64,7 @@ $TEMPLATE$ static PyObject* _W_$WRAPPER$ (PyObject* _self, PyObject* _linargs, P
 		$CLASS$* pbo = dynamic_cast<$CLASS$*>(Pb::objFromPy(_self));
 		bool noTiming = _args.getOpt<bool>("notiming", -1, 0);
 		pbPreparePlugin(pbo->getParent(), "$CLASS$::$FUNCNAME$" , !noTiming);
-		PyObject *_retval = 0;
+		PyObject *_retval = nullptr;
 		{ 
 			ArgLocker _lock;
 			$ARGLOADER$
@@ -116,7 +116,7 @@ $TEMPLATE$ static PyObject* _W_$WRAPPER$ (PyObject* _self, PyObject* o) {
 		$CLASS$* pbo = dynamic_cast<$CLASS$*>(Pb::objFromPy(_self));
 		bool noTiming = _args.getOpt<bool>("notiming", -1, 0);
 		pbPreparePlugin(pbo->getParent(), "$CLASS$::$FUNCNAME$" , !noTiming);
-		PyObject *_retval = 0;
+		PyObject *_retval = nullptr;
 		{ 
 			ArgLocker _lock;
 			$ARGLOADER$

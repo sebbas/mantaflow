@@ -102,7 +102,7 @@ PYTHON() void sampleLevelsetWithParticles(const LevelsetGrid& phi, const FlagGri
 //! the main loop).
 PYTHON() void sampleShapeWithParticles(const Shape& shape, const FlagGrid& flags, BasicParticleSystem& parts,
 				       const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false,
-				       const LevelsetGrid *exclude=NULL)
+				       const LevelsetGrid *exclude=nullptr)
 {
 	const bool is3D = flags.is3D();
 	const Real jlen = randomness / discretization;
@@ -155,7 +155,7 @@ void knSetNbObstacle(FlagGrid& nflags, const FlagGrid& flags, const Grid<Real>& 
 		if(set) nflags(i,j,k) = (flags(i,j,k) | FlagGrid::TypeFluid) & ~FlagGrid::TypeEmpty;
 	}
 }
-PYTHON() void markFluidCells(const BasicParticleSystem& parts, FlagGrid& flags, const Grid<Real>* phiObs=NULL, const ParticleDataImpl<int>* ptype=NULL, const int exclude=0) {
+PYTHON() void markFluidCells(const BasicParticleSystem& parts, FlagGrid& flags, const Grid<Real>* phiObs=nullptr, const ParticleDataImpl<int>* ptype=nullptr, const int exclude=0) {
 	// remove all fluid cells
 	knClearFluidFlags(flags, 0);
 	
@@ -191,7 +191,7 @@ inline Real calculateRadiusFactor(const Grid<Real>& grid, Real factor) {
 // optionally skip seeding new particles in "exclude" SDF
 PYTHON() void adjustNumber(BasicParticleSystem& parts, const MACGrid& vel, const FlagGrid& flags,
                 int minParticles, int maxParticles, const LevelsetGrid& phi, Real radiusFactor=1. , Real narrowBand=-1. ,
-                const Grid<Real>* exclude=NULL )
+                const Grid<Real>* exclude=nullptr )
 {
 	// which levelset to use as threshold
 	const Real SURFACE_LS = -1.0 * calculateRadiusFactor(phi, radiusFactor);
@@ -258,7 +258,7 @@ PYTHON() void debugIntToReal(const Grid<int>& source, Grid<Real>& dest, Real fac
 // the particles in a cell i,j,k are particles[index(i,j,k)] to particles[index(i+1,j,k)-1]
 // (ie,  particles[index(i+1,j,k)] already belongs to cell i+1,j,k)
 PYTHON() void gridParticleIndex(const BasicParticleSystem& parts, ParticleIndexSystem& indexSys,
-                                 const FlagGrid& flags, Grid<int>& index, Grid<int>* counter=NULL )
+                                 const FlagGrid& flags, Grid<int>& index, Grid<int>* counter=nullptr )
 {
 	bool delCounter = false;
 	if(!counter) { counter = new Grid<int>(  flags.getParent() ); delCounter=true; }
@@ -339,7 +339,7 @@ void ComputeUnionLevelsetPindex(const Grid<int>& index, const BasicParticleSyste
  
 PYTHON() void unionParticleLevelset(const BasicParticleSystem& parts, const ParticleIndexSystem& indexSys,
 				    const FlagGrid& flags, const Grid<int>& index, LevelsetGrid& phi, const Real radiusFactor=1.,
-				    const ParticleDataImpl<int> *ptype=NULL, const int exclude=0)
+				    const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0)
 {
 	// use half a cell diagonal as base radius
 	const Real radius = 0.5 * calculateRadiusFactor(phi, radiusFactor);
@@ -355,7 +355,7 @@ void ComputeAveragedLevelsetWeight(const BasicParticleSystem& parts,
 				   const Grid<int>& index, const ParticleIndexSystem& indexSys,
 				   LevelsetGrid& phi, const Real radius,
 				   const ParticleDataImpl<int>* ptype, const int exclude,
-				   Grid<Vec3>* save_pAcc = NULL, Grid<Real>* save_rAcc = NULL)
+				   Grid<Vec3>* save_pAcc = nullptr, Grid<Real>* save_rAcc = nullptr)
 {
 	const Vec3 gridPos = Vec3(i,j,k) + Vec3(0.5); // shifted by half cell
 	Real phiv = radius * 1.0; // outside 
@@ -436,7 +436,7 @@ void knSmoothGridNeg(const Grid<T>& me, Grid<T>& tmp, Real factor) {
 PYTHON() void averagedParticleLevelset(const BasicParticleSystem& parts, const ParticleIndexSystem& indexSys,
 				       const FlagGrid& flags, const Grid<int>& index, LevelsetGrid& phi, const Real radiusFactor=1.,
 				       const int smoothen=1, const int smoothenNeg=1,
-				       const ParticleDataImpl<int>* ptype=NULL, const int exclude=0)
+				       const ParticleDataImpl<int>* ptype=nullptr, const int exclude=0)
 {
 	// use half a cell diagonal as base radius
 	const Real radius = 0.5 * calculateRadiusFactor(phi, radiusFactor); 
@@ -498,7 +498,7 @@ void correctLevelset(LevelsetGrid& phi, const Grid<Vec3>& pAcc, const Grid<Real>
 //! Approach from "A unified particle model for fluid-solid interactions" by Solenthaler et al. in 2007
 PYTHON() void improvedParticleLevelset(const BasicParticleSystem& parts, const ParticleIndexSystem& indexSys, const FlagGrid& flags,
 	const Grid<int>& index, LevelsetGrid& phi, const Real radiusFactor = 1., const int smoothen = 1,const int smoothenNeg = 1,
-	const Real t_low = 0.4, const Real t_high = 3.5, const ParticleDataImpl<int>* ptype = NULL, const int exclude = 0)
+	const Real t_low = 0.4, const Real t_high = 3.5, const ParticleDataImpl<int>* ptype = nullptr, const int exclude = 0)
 {
 	// create temporary grids to store values from levelset weight computation
 	Grid<Vec3> save_pAcc(flags.getParent());
@@ -540,7 +540,7 @@ void knPushOutofObs(BasicParticleSystem& parts, const FlagGrid& flags, const Gri
 }
 //! push particles out of obstacle levelset
 PYTHON() void pushOutofObs(BasicParticleSystem& parts, const FlagGrid& flags, const Grid<Real>& phiObs, const Real shift=0, const Real thresh=0,
-			   const ParticleDataImpl<int>* ptype=NULL, const int exclude=0) {
+			   const ParticleDataImpl<int>* ptype=nullptr, const int exclude=0) {
 	knPushOutofObs(parts, flags, phiObs, shift, thresh, ptype, exclude);
 }
 
@@ -571,8 +571,8 @@ void knMapLinearVec3ToMACGrid(const BasicParticleSystem& p, const FlagGrid& flag
 // optionally , this function can use an existing vec3 grid to store the weights
 // this is useful in combination with the simple extrapolation function
 PYTHON() void mapPartsToMAC(const FlagGrid& flags, MACGrid& vel, MACGrid& velOld,
-			    const BasicParticleSystem& parts, const ParticleDataImpl<Vec3>& partVel, Grid<Vec3>* weight=NULL,
-			    const ParticleDataImpl<int>* ptype=NULL, const int exclude=0)
+			    const BasicParticleSystem& parts, const ParticleDataImpl<Vec3>& partVel, Grid<Vec3>* weight=nullptr,
+			    const ParticleDataImpl<int>* ptype=nullptr, const int exclude=0)
 {
 	// interpol -> grid. tmpgrid for particle contribution weights
 	bool freeTmp = false;
@@ -650,7 +650,7 @@ void knMapLinearMACGridToVec3_PIC(const BasicParticleSystem& p, const FlagGrid& 
 }
 PYTHON() void mapMACToParts(const FlagGrid& flags, const MACGrid& vel ,
                             const BasicParticleSystem& parts , ParticleDataImpl<Vec3>& partVel,
-			    const ParticleDataImpl<int>* ptype=NULL, const int exclude=0) {
+			    const ParticleDataImpl<int>* ptype=nullptr, const int exclude=0) {
 	knMapLinearMACGridToVec3_PIC( parts, flags, vel, partVel, ptype, exclude );
 }
 
@@ -668,7 +668,7 @@ void knMapLinearMACGridToVec3_FLIP(const BasicParticleSystem& p, const FlagGrid&
 
 PYTHON() void flipVelocityUpdate(const FlagGrid& flags, const MACGrid& vel, const MACGrid& velOld,
 				 const BasicParticleSystem& parts, ParticleDataImpl<Vec3>& partVel, const Real flipRatio,
-				 const ParticleDataImpl<int>* ptype=NULL, const int exclude=0) {
+				 const ParticleDataImpl<int>* ptype=nullptr, const int exclude=0) {
 	knMapLinearMACGridToVec3_FLIP( parts, flags, vel, velOld, partVel, flipRatio, ptype, exclude );
 }
 
@@ -701,7 +701,7 @@ void knCombineVels(MACGrid& vel, const Grid<Vec3>& w, MACGrid& combineVel, const
 }
 
 //! narrow band velocity combination
-PYTHON() void combineGridVel( MACGrid& vel, const Grid<Vec3>& weight, MACGrid& combineVel, const LevelsetGrid* phi=NULL,
+PYTHON() void combineGridVel( MACGrid& vel, const Grid<Vec3>& weight, MACGrid& combineVel, const LevelsetGrid* phi=nullptr,
     Real narrowBand=0.0, Real thresh=0.0) {
 	knCombineVels(vel, weight, combineVel, phi, narrowBand, thresh);
 }

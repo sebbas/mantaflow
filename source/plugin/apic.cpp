@@ -134,7 +134,7 @@ void apicMapPartsToMAC(
 	const FlagGrid &flags, MACGrid &vel,
 	const BasicParticleSystem &parts, const ParticleDataImpl<Vec3> &partVel,
 	const ParticleDataImpl<Vec3> &cpx, const ParticleDataImpl<Vec3> &cpy, const ParticleDataImpl<Vec3> &cpz,
-	MACGrid *mass=NULL, const ParticleDataImpl<int> *ptype=NULL, const int exclude=0, const int boundaryWidth=0)
+	MACGrid *mass=nullptr, const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0, const int boundaryWidth=0)
 {
 	// affine map: let's assume that the particle mass is constant, 1.0
 	if(!mass) {
@@ -235,7 +235,7 @@ PYTHON()
 void apicMapMACGridToParts(
 	ParticleDataImpl<Vec3> &partVel, ParticleDataImpl<Vec3> &cpx, ParticleDataImpl<Vec3> &cpy, ParticleDataImpl<Vec3> &cpz,
 	const BasicParticleSystem &parts, const MACGrid &vel, const FlagGrid &flags,
-	const ParticleDataImpl<int> *ptype=NULL, const int exclude=0, const int boundaryWidth=0)
+	const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0, const int boundaryWidth=0)
 {
 	knApicMapLinearMACGridToVec3(partVel, cpx, cpy, cpz, parts, vel, flags, ptype, exclude, boundaryWidth);
 }

@@ -64,8 +64,8 @@ void KnProcessBurn(Grid<Real>& fuel, Grid<Real>& density, Grid<Real>& react,
 }
 
 PYTHON() void processBurn(Grid<Real>& fuel, Grid<Real>& density, Grid<Real>& react,
-						  Grid<Real>* red = NULL, Grid<Real>* green = NULL, Grid<Real>* blue = NULL,
-						  Grid<Real>* heat = NULL, Real burningRate = 0.75f,
+						  Grid<Real>* red = nullptr, Grid<Real>* green = nullptr, Grid<Real>* blue = nullptr,
+						  Grid<Real>* heat = nullptr, Real burningRate = 0.75f,
 						  Real flameSmoke = 1.0f, Real ignitionTemp = 1.25f,
 						  Real maxTemp = 1.75f, Vec3 flameSmokeColor = Vec3(0.7f, 0.7f, 0.7f))
 {

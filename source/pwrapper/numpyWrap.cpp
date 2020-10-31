@@ -96,7 +96,7 @@ template<>
 PyArrayContainer
 fromPy<PyArrayContainer>(PyObject *obj)
 {
-	if(PyArray_API == NULL) {
+	if(PyArray_API == nullptr) {
 		// python 3 uses the return value
 #		if PY_VERSION_HEX >= 0x03000000
 		import_array();
@@ -109,7 +109,7 @@ fromPy<PyArrayContainer>(PyObject *obj)
 		errMsg("argument is not an numpy array");
 	}
 
-	PyArrayObject *obj_p = reinterpret_cast<PyArrayObject *>(PyArray_CheckFromAny(obj, NULL, 0, 0, /*NPY_ARRAY_ENSURECOPY*/ NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_NOTSWAPPED, NULL));
+	PyArrayObject *obj_p = reinterpret_cast<PyArrayObject *>(PyArray_CheckFromAny(obj, nullptr, 0, 0, /*NPY_ARRAY_ENSURECOPY*/ NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_NOTSWAPPED, nullptr));
 	PyArrayContainer container = PyArrayContainer(obj_p);
 
 	return container;

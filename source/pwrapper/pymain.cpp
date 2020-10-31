@@ -55,7 +55,7 @@ void runScript(vector<string>& args) {
 	
 	// Try to load python script
 	FILE* fp = fopen(filename.c_str(),"rb");
-	if (fp == NULL) {
+	if (fp == nullptr) {
 		debMsg("Cannot open '" << filename << "'", 0);
 		Pb::finalize();
 		return;

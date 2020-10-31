@@ -134,7 +134,7 @@ PbClass* FluidSolver::create(PbType t, PbTypeVec T, const string& name) {
 	
 	PbClass* ret = PbClass::createPyObject(t.str() + T.str(), name, _args, this);
 #	else
-	PbClass* ret = NULL;
+	PbClass* ret = nullptr;
 #	endif
 	return ret;
 }

@@ -29,7 +29,7 @@ class WaveletNoiseField : public PbClass {
 	public:     
 		PYTHON() WaveletNoiseField( FluidSolver* parent, int fixedSeed=-1 , int loadFromFile=false );
 		~WaveletNoiseField() {
-			if(mNoiseTile && !mNoiseReferenceCount) { delete mNoiseTile; mNoiseTile=NULL; }
+			if(mNoiseTile && !mNoiseReferenceCount) { delete mNoiseTile; mNoiseTile=nullptr; }
 		};
 
 		//! evaluate noise

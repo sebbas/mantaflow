@@ -335,7 +335,7 @@ void knUnprojectNormalComp (FlagGrid& flags, MACGrid& vel, Grid<Real>& phi, Real
 // into obstacle is a special mode for second order obstable boundaries (extrapolating
 // only fluid velocities, not those at obstacles)
 PYTHON() void extrapolateMACSimple (FlagGrid& flags, MACGrid& vel, int distance = 4, 
-		LevelsetGrid* phiObs=NULL , bool intoObs = false ) 
+		LevelsetGrid* phiObs=nullptr , bool intoObs = false )
 {
 	Grid<int> tmp( flags.getParent() );
 	int dim = (flags.is3D() ? 3:2);

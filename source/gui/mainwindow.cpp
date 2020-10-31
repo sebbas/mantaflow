@@ -43,9 +43,9 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 	mPainterLayout = new QVBoxLayout;    
 	mPainterLayout->setAlignment(Qt::AlignTop);
 	mPainterLayout->addWidget(mInfo);
-	GridPainter<int>* intPainter = new GridPainter<int>(NULL, this);     
-	mPainter.push_back(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr(), this));    
-	mPainter.push_back(new GridPainter<Vec3>(NULL, this));    
+	GridPainter<int>* intPainter = new GridPainter<int>(nullptr, this);
+	mPainter.push_back(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr(), this));
+	mPainter.push_back(new GridPainter<Vec3>(nullptr, this));
 	mPainter.push_back(intPainter);
 	mPainter.push_back(new ParticlePainter(intPainter, this));
 	MeshPainter* ptr = new MeshPainter(this);

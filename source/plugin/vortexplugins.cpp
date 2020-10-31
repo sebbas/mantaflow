@@ -81,7 +81,7 @@ void KnAcceleration(MACGrid& a, const MACGrid& v1, const MACGrid& v0, const Real
 
 //! Add vorticity to vortex sheets based on buoyancy
 PYTHON() void vorticitySource(VortexSheetMesh& mesh, Vec3 gravity, 
-                                                        const MACGrid* vel=NULL, const MACGrid* velOld=NULL,
+                                                        const MACGrid* vel=nullptr, const MACGrid* velOld=nullptr,
 							Real scale = 0.1, Real maxAmount = 0, Real mult = 1.0)
 {
 	Real dt = mesh.getParent()->getDt();
@@ -190,7 +190,7 @@ PYTHON() void VPseedK41(VortexParticleSystem& system, const Shape* shape, Real s
 		
 //! Vortex-in-cell integration
 PYTHON() void VICintegration(VortexSheetMesh& mesh, Real sigma, Grid<Vec3>& vel, const FlagGrid& flags,
-					  Grid<Vec3>* vorticity=NULL, Real cgMaxIterFac=1.5, Real cgAccuracy=1e-3, Real scale = 0.01, int precondition=0) {
+					  Grid<Vec3>* vorticity=nullptr, Real cgMaxIterFac=1.5, Real cgAccuracy=1e-3, Real scale = 0.01, int precondition=0) {
 	
 	MuTime t0;
 	const Real fac = 16.0; // experimental factor to balance out regularization

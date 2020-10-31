@@ -65,7 +65,7 @@ public slots:
 class LockedObjPainter : public Painter {
 	Q_OBJECT
 public:
-	LockedObjPainter(QWidget* par = 0) : Painter(par), mRequestUpdate(false), mObject(NULL), mObjIndex(-1) {}
+	LockedObjPainter(QWidget* par = nullptr) : Painter(par), mRequestUpdate(false), mObject(nullptr), mObjIndex(-1) {}
 
 	void doEvent(int e, int param=0); // don't overload, use processKeyEvent and update instead
 	
@@ -84,7 +84,7 @@ protected:
 template<class T>
 class GridPainter : public LockedObjPainter {
 public:
-	GridPainter(FlagGrid** flags = NULL, QWidget* par = 0);
+	GridPainter(FlagGrid** flags = nullptr, QWidget* par = nullptr);
 	~GridPainter();
 	
 	void paint();

@@ -136,7 +136,7 @@ public:
 
 	enum SpecialValues { FlagInited = 1, FlagIsOnHeap = 2};
 
-	FastMarch(const FlagGrid& flags, Grid<int>& fmFlags, Grid<Real>& levelset, Real maxTime, MACGrid* velTransport = NULL);
+	FastMarch(const FlagGrid& flags, Grid<int>& fmFlags, Grid<Real>& levelset, Real maxTime, MACGrid* velTransport = nullptr);
 	~FastMarch() {}
 	
 	//! advect level set function with given velocity */

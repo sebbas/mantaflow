@@ -550,11 +550,11 @@ KERNEL() void knResetUvGrid (Grid<Vec3>& target, const Vec3* offset) {
 	target(i,j,k) = coord;
 }
 
-PYTHON() void resetUvGrid (Grid<Vec3> &target, const Vec3* offset=NULL)
+PYTHON() void resetUvGrid (Grid<Vec3> &target, const Vec3* offset=nullptr)
 {
 	knResetUvGrid reset(target, offset); // note, llvm complains about anonymous declaration here... ?
 }
-PYTHON() void updateUvWeight(Real resetTime, int index, int numUvs, Grid<Vec3> &uv, const Vec3* offset=NULL)
+PYTHON() void updateUvWeight(Real resetTime, int index, int numUvs, Grid<Vec3> &uv, const Vec3* offset=nullptr)
 {
 	const Real t   = uv.getParent()->getTime();
 	Real  timeOff  = resetTime/(Real)numUvs;
@@ -659,7 +659,7 @@ KERNEL(idx, reduce=+) returns(int numEmpty=0)
 int knCountFluidCells(FlagGrid& flags) { if (flags.isFluid(idx) ) numEmpty++; }
 
 //! averaged value for all cells (if flags are given, only for fluid cells)
-PYTHON() Real getGridAvg(Grid<Real>& source, FlagGrid* flags=NULL) 
+PYTHON() Real getGridAvg(Grid<Real>& source, FlagGrid* flags=nullptr)
 {
 	double sum = knGridTotalSum(source, flags);
 

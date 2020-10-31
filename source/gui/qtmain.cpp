@@ -25,8 +25,8 @@ extern void runScript(vector<string>& args);
 namespace Manta {
 	
 // main pointers, might be uninitialized if gui is disabled with env var
-GuiThread* gGuiThread = NULL;    
-MainThread* gMainThread = NULL;    
+GuiThread* gGuiThread = nullptr;
+MainThread* gMainThread = nullptr;
 	
 MainThread::MainThread(vector<string>& args) : mFinished(false), mArgs(args) {
 }

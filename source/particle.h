@@ -50,7 +50,7 @@ public:
 
 	virtual SystemType getType() const { return BASE; }
 	virtual std::string infoString() const; 
-	virtual ParticleBase* clone() { assertMsg( false , "Dont use, override..."); return NULL; } 
+	virtual ParticleBase* clone() { assertMsg( false , "Dont use, override..."); return nullptr; }
 
 	//! slow virtual function to query size, do not use in kernels! use size() instead
 	virtual IndexInt getSizeSlow() const { assertMsg( false , "Dont use, override..."); return 0; }
@@ -159,11 +159,11 @@ public:
 	PYTHON() void clear();
 			
 	//! Advect particle in grid velocity field
-	PYTHON() void advectInGrid(const FlagGrid &flags, const MACGrid &vel, const int integrationMode, const bool deleteInObstacle=true, const bool stopInObstacle=true, const bool skipNew=false, const ParticleDataImpl<int> *ptype=NULL, const int exclude=0);
+	PYTHON() void advectInGrid(const FlagGrid &flags, const MACGrid &vel, const int integrationMode, const bool deleteInObstacle=true, const bool stopInObstacle=true, const bool skipNew=false, const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0);
 	
 	//! Project particles outside obstacles
 	PYTHON() void projectOutside(Grid<Vec3> &gradient);
-	PYTHON() void projectOutOfBnd(const FlagGrid &flags, const Real bnd, const std::string &plane="xXyYzZ", const ParticleDataImpl<int> *ptype=NULL, const int exclude=0);
+	PYTHON() void projectOutOfBnd(const FlagGrid &flags, const Real bnd, const std::string &plane="xXyYzZ", const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0);
 	
 	virtual ParticleBase* clone();
 	virtual std::string infoString() const;
@@ -289,7 +289,7 @@ public:
 	//! interface functions, using assert instead of pure virtual for python compatibility
 	virtual IndexInt  getSizeSlow() const { assertMsg( false , "Dont use, override..."); return 0; } 
 	virtual void addEntry()   { assertMsg( false , "Dont use, override..."); return;   }
-	virtual ParticleDataBase* clone() { assertMsg( false , "Dont use, override..."); return NULL; }
+	virtual ParticleDataBase* clone() { assertMsg( false , "Dont use, override..."); return nullptr; }
 	virtual PdataType getType() const { assertMsg( false , "Dont use, override..."); return TypeNone; } 
 	virtual void resize(IndexInt size)     { assertMsg( false , "Dont use, override..."); return;  }
 	virtual void copyValueSlow(IndexInt from, IndexInt to) { assertMsg( false , "Dont use, override..."); return;  }
@@ -362,7 +362,7 @@ public:
 	PYTHON() Real getMax() const;
 	PYTHON() Real getMin() const;
 
-	PYTHON() T    sum(const ParticleDataImpl<int> *t=NULL, const int itype=0) const;
+	PYTHON() T    sum(const ParticleDataImpl<int> *t=nullptr, const int itype=0) const;
 	PYTHON() Real sumSquare() const;
 	PYTHON() Real sumMagnitude() const;
 
@@ -497,8 +497,8 @@ static inline Vec3 bisectBacktracePos(const FlagGrid& flags, const Vec3& oldp, c
 // at least make sure all particles are inside domain
 KERNEL(pts) template<class S>
 void KnClampPositions(
-	std::vector<S>& p, const FlagGrid& flags, ParticleDataImpl<Vec3> *posOld=NULL, bool stopInObstacle=true,
-	const ParticleDataImpl<int> *ptype=NULL, const int exclude=0)
+	std::vector<S>& p, const FlagGrid& flags, ParticleDataImpl<Vec3> *posOld=nullptr, bool stopInObstacle=true,
+	const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0)
 {
 	if (p[idx].flag & ParticleBase::PDELETE) return;
 	if (ptype && ((*ptype)[idx] & exclude)) {
@@ -521,7 +521,7 @@ void ParticleSystem<S>::advectInGrid(
 	const ParticleDataImpl<int> *ptype, const int exclude)
 {
 	// position clamp requires old positions, backup
-	ParticleDataImpl<Vec3> *posOld = NULL;
+	ParticleDataImpl<Vec3> *posOld = nullptr;
 	if(!deleteInObstacle) {
 		posOld = new ParticleDataImpl<Vec3>(this->getParent());
 		posOld->resize(mData.size());

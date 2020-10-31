@@ -205,7 +205,7 @@ bool bobjFluidObject::loadMeshData(const MTime& time,
 							  MStatus& stat)
 {
 	int frameNo;
-	char* filename = NULL;
+	char* filename = nullptr;
 
 	// compute frame index
 	frameNo = (int)time.as( MTime::kFilm );
@@ -213,14 +213,14 @@ bool bobjFluidObject::loadMeshData(const MTime& time,
 
 	// validate input file mask
 	if (!inFileMask) 
-		bailOut("inFileMask is NULL");
+		bailOut("inFileMask is nullptr");
 	if (strlen(inFileMask) < 3)
 		bailOut("inFileMask is < 3")
 
 	debMsg("bobjFluidObject::loadMeshData: Starting for " << inFileMask<<", frame "<<frameNo );
 
 	const char* perc = strrchr(inFileMask, '%');
-	if (perc == NULL)
+	if (perc == nullptr)
 		bailOut("invalid file mask string " << inFileMask);
 	if (!((perc[1]=='d')||(perc[2]=='d')||(perc[3]=='d'))) 
 		bailOut("invalid file mask string " << inFileMask);

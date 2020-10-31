@@ -58,13 +58,13 @@ KERNEL(bnd=1) void KnApplyForce(const FlagGrid& flags, MACGrid& vel, Vec3 force,
 }
 
 //! add gravity forces to all fluid cells, optionally  adapts to different grid sizes automatically
-PYTHON() void addGravity(const FlagGrid& flags, MACGrid& vel, Vec3 gravity, const Grid<Real>* exclude=NULL, bool scale=true) {
+PYTHON() void addGravity(const FlagGrid& flags, MACGrid& vel, Vec3 gravity, const Grid<Real>* exclude=nullptr, bool scale=true) {
 	float gridScale = (scale) ? flags.getDx() : 1;
 	Vec3 f = gravity * flags.getParent()->getDt() / gridScale;
 	KnApplyForce(flags, vel, f, exclude, true);
 }
 //! Deprecated: use addGravity(scale=false) instead
-PYTHON() void addGravityNoScale(const FlagGrid& flags, MACGrid& vel, const Vec3& gravity, const Grid<Real>* exclude=NULL) {
+PYTHON() void addGravityNoScale(const FlagGrid& flags, MACGrid& vel, const Vec3& gravity, const Grid<Real>* exclude=nullptr) {
 	addGravity(flags, vel, gravity, exclude, false);
 }
 
@@ -130,7 +130,7 @@ PYTHON() void setOpenBound(FlagGrid& flags, int bWidth, string openBound = "", i
 }
 
 //! delete fluid and ensure empty flag in outflow cells, delete particles and density and set phi to 0.5
-PYTHON() void resetOutflow(FlagGrid& flags, Grid<Real>* phi = 0, BasicParticleSystem* parts = 0, Grid<Real>* real = 0, Grid<int>* index = 0, ParticleIndexSystem* indexSys = 0){
+PYTHON() void resetOutflow(FlagGrid& flags, Grid<Real>* phi = nullptr, BasicParticleSystem* parts = nullptr, Grid<Real>* real = nullptr, Grid<int>* index = nullptr, ParticleIndexSystem* indexSys = nullptr) {
 	// check if phi and parts -> pindex and gpi already created -> access particles from cell index, avoid extra looping over particles
 	if (parts && (!index || !indexSys)){
 		if (phi) debMsg("resetOpenBound for phi and particles, but missing index and indexSys for enhanced particle access!",1);
@@ -303,8 +303,8 @@ KERNEL() void KnSetWallBcsFrac(const FlagGrid& flags, const MACGrid& vel, MACGri
 }
 
 //! set zero normal velocity boundary condition on walls
-// (optionally with second order accuracy using the obstacle SDF , fractions grid currentlyl not needed)
-PYTHON() void setWallBcs(const FlagGrid& flags, MACGrid& vel, const MACGrid* obvel = 0, const MACGrid* fractions = 0, const Grid<Real>* phiObs = 0, int boundaryWidth=0) {
+// (optionally with second order accuracy using the obstacle SDF , fractions grid currently not needed)
+PYTHON() void setWallBcs(const FlagGrid& flags, MACGrid& vel, const MACGrid* obvel = nullptr, const MACGrid* fractions = nullptr, const Grid<Real>* phiObs = nullptr, int boundaryWidth=0) {
 	if(!phiObs || !fractions) {
 		KnSetWallBcs(flags, vel, obvel);
 	} else {
@@ -358,7 +358,7 @@ KERNEL(bnd=1) void KnConfForce(Grid<Vec3>& force, const Grid<Real>& grid, const 
 	force(i,j,k) = str * cross(grad, curl(i,j,k));
 }
 
-PYTHON() void vorticityConfinement(MACGrid& vel, const FlagGrid& flags, Real strength=0, const Grid<Real>* strengthCell=NULL) {
+PYTHON() void vorticityConfinement(MACGrid& vel, const FlagGrid& flags, Real strength=0, const Grid<Real>* strengthCell=nullptr) {
 	Grid<Vec3> velCenter(flags.getParent()), curl(flags.getParent()), force(flags.getParent());
 	Grid<Real> norm(flags.getParent());
 	
@@ -366,14 +366,14 @@ PYTHON() void vorticityConfinement(MACGrid& vel, const FlagGrid& flags, Real str
 	CurlOp(velCenter, curl);
 	GridNorm(norm, curl);
 	KnConfForce(force, norm, curl, strength, strengthCell);
-	KnApplyForceField(flags, vel, force, NULL, true, false);
+	KnApplyForceField(flags, vel, force, nullptr, true, false);
 }
 
-PYTHON() void addForceField(const FlagGrid& flags, MACGrid& vel, const Grid<Vec3>& force, const Grid<Real>* region=NULL, bool isMAC=false) {
+PYTHON() void addForceField(const FlagGrid& flags, MACGrid& vel, const Grid<Vec3>& force, const Grid<Real>* region=nullptr, bool isMAC=false) {
 	KnApplyForceField(flags, vel, force, region, true, isMAC);
 }
 
-PYTHON() void setForceField(const FlagGrid& flags, MACGrid& vel, const Grid<Vec3>& force, const Grid<Real>* region=NULL, bool isMAC=false) {
+PYTHON() void setForceField(const FlagGrid& flags, MACGrid& vel, const Grid<Vec3>& force, const Grid<Real>* region=nullptr, bool isMAC=false) {
 	KnApplyForceField(flags, vel, force, region, false, isMAC);
 }
 
@@ -412,8 +412,8 @@ KERNEL() void KnDissolveSmoke(const FlagGrid& flags, Grid<Real>& density, Grid<R
 	}
 }
 
-PYTHON() void dissolveSmoke(const FlagGrid& flags, Grid<Real>& density, Grid<Real>* heat=NULL,
-	Grid<Real>* red=NULL, Grid<Real>* green=NULL, Grid<Real>* blue=NULL, int speed=5, bool logFalloff=true)
+PYTHON() void dissolveSmoke(const FlagGrid& flags, Grid<Real>& density, Grid<Real>* heat=nullptr,
+	Grid<Real>* red=nullptr, Grid<Real>* green=nullptr, Grid<Real>* blue=nullptr, int speed=5, bool logFalloff=true)
 {
 	float dydx = 1.0f / (float)speed; // max density/speed = dydx
 	float fac = 1.0f - dydx;

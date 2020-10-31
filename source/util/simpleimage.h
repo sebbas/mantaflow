@@ -31,7 +31,7 @@ namespace Manta {
 class SimpleImage {
 	public:
 		// cons/des
-		SimpleImage() : mSize(-1), mpData(NULL), mAbortOnError(true) { };
+		SimpleImage() : mSize(-1), mpData(nullptr), mAbortOnError(true) { };
 		virtual ~SimpleImage() {
 			if(mpData) delete [] mpData;
 		};

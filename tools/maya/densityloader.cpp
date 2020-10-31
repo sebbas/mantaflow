@@ -190,7 +190,7 @@ typedef struct {
 
 void FluidGridObject::loadDensity(const char* mask, int offset, MTime& time, MObject& obj) {
 	int frameNo;
-	char* filename = NULL;
+	char* filename = nullptr;
 
 	// compute frame index
 	frameNo = (int)time.as( MTime::kFilm );
@@ -200,7 +200,7 @@ void FluidGridObject::loadDensity(const char* mask, int offset, MTime& time, MOb
 	if (!mask || strlen(mask)<3) return;
 	
 	const char* perc = strrchr(mask, '%');
-	if (perc == NULL) return; // invalid mask string
+	if (perc == nullptr) return; // invalid mask string
 	if (!((perc[1]=='d')||(perc[2]=='d')||(perc[3]=='d'))) return; // invalid mask string
 
 	// get input file name
@@ -298,7 +298,7 @@ void FluidGridObject::loadDensity(const char* mask, int offset, MTime& time, MOb
 	
 	// copy values
 	float* dest = fluid.density();
-	if (dest != NULL) {
+	if (dest != nullptr) {
 		unsigned totalSize =fluid.gridSize();
 		if (sx*sy*sz == totalSize) {
 			for (int k=0, idx=0; k<sz; k++)

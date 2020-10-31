@@ -165,7 +165,7 @@ void MeshPainter::paint() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 			
 	// draw background        
-	if (mBackground != NULL && mBackgroundMode != BModeInvisible) {
+	if (mBackground != nullptr && mBackgroundMode != BModeInvisible) {
 		if (mBackgroundMode != BModeTrans) {
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);

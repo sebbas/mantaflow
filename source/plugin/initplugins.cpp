@@ -46,7 +46,7 @@ KERNEL() void KnAddNoise(const FlagGrid& flags, Grid<Real>& density, const Wavel
 	if (!flags.isFluid(i,j,k) || (sdf && (*sdf)(i,j,k) > 0.) ) return;
 	density(i,j,k) += noise.evaluate(Vec3(i,j,k)) * scale;
 }
-PYTHON() void addNoise(const FlagGrid& flags, Grid<Real>& density, const WaveletNoiseField& noise, const Grid<Real>* sdf=NULL, Real scale=1.0 ) {
+PYTHON() void addNoise(const FlagGrid& flags, Grid<Real>& density, const WaveletNoiseField& noise, const Grid<Real>* sdf=nullptr, Real scale=1.0 ) {
 	KnAddNoise(flags, density, noise, sdf, scale );
 }
 
@@ -123,7 +123,7 @@ void KnApplyEmission(const FlagGrid& flags, Grid<Real>& target, const Grid<Real>
 
 //! Add emission values
 //isAbsolute: whether to add emission values to existing, or replace
-PYTHON() void applyEmission(FlagGrid& flags, Grid<Real>& target, Grid<Real>& source, Grid<Real>* emissionTexture=NULL, bool isAbsolute=true, int type=0) {
+PYTHON() void applyEmission(FlagGrid& flags, Grid<Real>& target, Grid<Real>& source, Grid<Real>* emissionTexture=nullptr, bool isAbsolute=true, int type=0) {
 	KnApplyEmission(flags, target, source, emissionTexture, isAbsolute, type);
 }
 
@@ -176,8 +176,8 @@ KERNEL() void KnResetInObstacle(FlagGrid& flags, MACGrid& vel, Grid<Real>* densi
 	}
 }
 
-PYTHON() void resetInObstacle(FlagGrid& flags, MACGrid& vel, Grid<Real>* density, Grid<Real>* heat=NULL,
-	Grid<Real>* fuel=NULL, Grid<Real>* flame=NULL, Grid<Real>* red=NULL, Grid<Real>* green=NULL, Grid<Real>* blue=NULL, Real resetValue=0)
+PYTHON() void resetInObstacle(FlagGrid& flags, MACGrid& vel, Grid<Real>* density, Grid<Real>* heat=nullptr,
+	Grid<Real>* fuel=nullptr, Grid<Real>* flame=nullptr, Grid<Real>* red=nullptr, Grid<Real>* green=nullptr, Grid<Real>* blue=nullptr, Real resetValue=0)
 {
 	KnResetInObstacle(flags, vel, density, heat, fuel, flame, red, green, blue, resetValue);
 }
@@ -186,7 +186,7 @@ PYTHON() void resetInObstacle(FlagGrid& flags, MACGrid& vel, Grid<Real>* density
 //*****************************************************************************
 
 //! check for symmetry , optionally enfore by copying
-PYTHON() void checkSymmetry( Grid<Real>& a, Grid<Real>* err=NULL, bool symmetrize=false, int axis=0, int bound=0)
+PYTHON() void checkSymmetry( Grid<Real>& a, Grid<Real>* err=nullptr, bool symmetrize=false, int axis=0, int bound=0)
 {
 	const int c  = axis; 
 	const int s = a.getSize()[c];
@@ -202,7 +202,7 @@ PYTHON() void checkSymmetry( Grid<Real>& a, Grid<Real>* err=NULL, bool symmetriz
 	}
 }
 //! check for symmetry , mac grid version
-PYTHON() void checkSymmetryVec3( Grid<Vec3>& a, Grid<Real>* err=NULL, bool symmetrize=false , int axis=0, 
+PYTHON() void checkSymmetryVec3( Grid<Vec3>& a, Grid<Real>* err=nullptr, bool symmetrize=false , int axis=0,
 								int bound=0, int disable=0)
 {
 	if(err) err->setConst(0.);
@@ -450,7 +450,7 @@ void KnUpdateFlagsObs(FlagGrid& flags, const MACGrid* fractions, const Grid<Real
 
 //! update obstacle and outflow flags from levelsets
 //! optionally uses fill fractions for obstacle
-PYTHON() void setObstacleFlags(FlagGrid& flags, const Grid<Real>& phiObs, const MACGrid* fractions=NULL, const Grid<Real>* phiOut=NULL, const Grid<Real>* phiIn=NULL, int boundaryWidth=1) {
+PYTHON() void setObstacleFlags(FlagGrid& flags, const Grid<Real>& phiObs, const MACGrid* fractions=nullptr, const Grid<Real>* phiOut=nullptr, const Grid<Real>* phiIn=nullptr, int boundaryWidth=1) {
 	KnUpdateFlagsObs(flags, fractions, phiObs, phiOut, phiIn, boundaryWidth);
 }
 
@@ -494,9 +494,9 @@ public:
 	int    mDim;
 	float* mMat1D;
 
-	GaussianKernelCreator() : mSigma(0.0f), mDim(0), mMat1D(NULL) {}
+	GaussianKernelCreator() : mSigma(0.0f), mDim(0), mMat1D(nullptr) {}
 	GaussianKernelCreator(float sigma, int dim = 0) 
-		: mSigma(0.0f), mDim(0), mMat1D(NULL) {
+		: mSigma(0.0f), mDim(0), mMat1D(nullptr) {
 		setGaussianSigma(sigma, dim);
 	}
 

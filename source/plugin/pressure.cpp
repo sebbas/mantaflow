@@ -277,10 +277,10 @@ PYTHON() void releaseMG(FluidSolver* solver=nullptr) {
 PYTHON() void computePressureRhs(
 	Grid<Real>& rhs, const MACGrid& vel,
 	const Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
-	const Grid<Real>* phi = 0,
-	const Grid<Real>* perCellCorr = 0,
-	const MACGrid* fractions = 0,
-	const MACGrid* obvel = 0,
+	const Grid<Real>* phi = nullptr,
+	const Grid<Real>* perCellCorr = nullptr,
+	const MACGrid* fractions = nullptr,
+	const MACGrid* obvel = nullptr,
 	Real gfClamp = 1e-04,
 	Real cgMaxIterFac = 1.5,
 	bool precondition = true, // Deprecated, use preconditioner instead
@@ -288,7 +288,7 @@ PYTHON() void computePressureRhs(
 	bool enforceCompatibility = false,
 	bool useL2Norm = false,
 	bool zeroPressureFixing = false,
-	const Grid<Real> *curv = NULL,
+	const Grid<Real> *curv = nullptr,
 	const Real surfTens = 0. )
 {
 	// compute divergence and init right hand side
@@ -312,9 +312,9 @@ PYTHON() void computePressureRhs(
 PYTHON() void solvePressureSystem(
 	Grid<Real>& rhs, MACGrid& vel,
 	Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
-	const Grid<Real>* phi = 0,
-	const Grid<Real>* perCellCorr = 0,
-	const MACGrid* fractions = 0,
+	const Grid<Real>* phi = nullptr,
+	const Grid<Real>* perCellCorr = nullptr,
+	const MACGrid* fractions = nullptr,
 	Real gfClamp = 1e-04,
 	Real cgMaxIterFac = 1.5,
 	bool precondition = true, // Deprecated, use preconditioner instead
@@ -322,7 +322,7 @@ PYTHON() void solvePressureSystem(
 	const bool enforceCompatibility = false,
 	const bool useL2Norm = false,
 	const bool zeroPressureFixing = false,
-	const Grid<Real> *curv = NULL,
+	const Grid<Real> *curv = nullptr,
 	const Real surfTens = 0.)
 {
 	if(precondition==false) preconditioner = PcNone; // for backwards compatibility
@@ -454,9 +454,9 @@ PYTHON() void solvePressureSystem(
 //! Apply pressure gradient to make velocity field divergence free
 PYTHON() void correctVelocity(
 	MACGrid& vel, Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
-	const Grid<Real>* phi = 0,
-	const Grid<Real>* perCellCorr = 0,
-	const MACGrid* fractions = 0,
+	const Grid<Real>* phi = nullptr,
+	const Grid<Real>* perCellCorr = nullptr,
+	const MACGrid* fractions = nullptr,
 	Real gfClamp = 1e-04,
 	Real cgMaxIterFac = 1.5,
 	bool precondition = true, // Deprecated, use preconditioner instead
@@ -464,7 +464,7 @@ PYTHON() void correctVelocity(
 	bool enforceCompatibility = false,
 	bool useL2Norm = false,
 	bool zeroPressureFixing = false,
-	const Grid<Real> *curv = NULL,
+	const Grid<Real> *curv = nullptr,
 	const Real surfTens = 0.)
 {
 	knCorrectVelocity(flags, vel, pressure);
@@ -479,10 +479,10 @@ PYTHON() void correctVelocity(
 //! all three pressure helper functions in a row.
 PYTHON() void solvePressure(
 	MACGrid& vel, Grid<Real>& pressure, const FlagGrid& flags, Real cgAccuracy = 1e-3,
-	const Grid<Real>* phi = 0,
-	const Grid<Real>* perCellCorr = 0,
-	const MACGrid* fractions = 0,
-	const MACGrid* obvel = 0,
+	const Grid<Real>* phi = nullptr,
+	const Grid<Real>* perCellCorr = nullptr,
+	const MACGrid* fractions = nullptr,
+	const MACGrid* obvel = nullptr,
 	Real gfClamp = 1e-04,
 	Real cgMaxIterFac = 1.5,
 	bool precondition = true, // Deprecated, use preconditioner instead
@@ -490,9 +490,9 @@ PYTHON() void solvePressure(
 	bool enforceCompatibility = false,
 	bool useL2Norm = false,
 	bool zeroPressureFixing = false,
-	const Grid<Real> *curv = NULL,
+	const Grid<Real> *curv = nullptr,
 	const Real surfTens = 0.,
-	Grid<Real>* retRhs = NULL)
+	Grid<Real>* retRhs = nullptr)
 {
 	Grid<Real> rhs(vel.getParent());
 

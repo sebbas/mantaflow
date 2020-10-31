@@ -364,7 +364,7 @@ public:
 	//! count no. of cells matching flags via "AND"
 	//! warning for large grids! only regular int returned (due to python interface)
 	//! optionally creates mask in RealGrid (1 where flag matches, 0 otherwise)
-	PYTHON() int countCells(int flag, int bnd=0, Grid<Real>* mask=NULL);
+	PYTHON() int countCells(int flag, int bnd=0, Grid<Real>* mask=nullptr);
 };
 
 //! helper to compute grid conversion factor between local coordinates of two grids

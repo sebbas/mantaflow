@@ -52,7 +52,7 @@ PbClass::~PbClass()
 }
 
 void PbClass::checkParent() {
-	if (getParent() == NULL) {
+	if (getParent() == nullptr) {
 		errMsg("New class " + mName + ": no parent given -- specify using parent=xxx !");
 	}
 }

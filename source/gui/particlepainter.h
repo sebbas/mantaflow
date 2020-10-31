@@ -28,7 +28,7 @@ namespace Manta {
 class ParticlePainter : public LockedObjPainter {
 	Q_OBJECT
 public:
-	ParticlePainter(GridPainter<int>* gridRef, QWidget* par = 0);
+	ParticlePainter(GridPainter<int>* gridRef, QWidget* par = nullptr);
 	~ParticlePainter();
 	
 	void paint();

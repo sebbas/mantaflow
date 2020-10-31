@@ -123,7 +123,7 @@ PYTHON()
 void extractFeatureVel(
 	PyArrayContainer fv, const int N_row, const int off_begin,
 	const BasicParticleSystem &p, const MACGrid &vel,
-	const Real scale=1.0, const ParticleDataImpl<int> *ptype=NULL, const int exclude=0,
+	const Real scale=1.0, const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0,
 	const int window=1)
 {
 	knExtractFeatureVel(p, reinterpret_cast<Real*>(fv.pData), N_row, off_begin, vel, scale, ptype, exclude, window);
@@ -132,7 +132,7 @@ PYTHON()
 void extractFeaturePhi(
 	PyArrayContainer fv, const int N_row, const int off_begin,
 	const BasicParticleSystem &p, const Grid<Real> &phi,
-	const Real scale=1.0, const ParticleDataImpl<int> *ptype=NULL, const int exclude=0,
+	const Real scale=1.0, const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0,
 	const int window=1)
 {
 	knExtractFeaturePhi(p, reinterpret_cast<Real*>(fv.pData), N_row, off_begin, phi, scale, ptype, exclude, window);
@@ -141,7 +141,7 @@ PYTHON()
 void extractFeatureGeo(
 	PyArrayContainer fv, const int N_row, const int off_begin,
 	const BasicParticleSystem &p, const FlagGrid &flag,
-	const Real scale=1.0, const ParticleDataImpl<int> *ptype=NULL, const int exclude=0,
+	const Real scale=1.0, const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0,
 	const int window=1)
 {
 	knExtractFeatureGeo(p, reinterpret_cast<Real*>(fv.pData), N_row, off_begin, flag, scale, ptype, exclude, window);

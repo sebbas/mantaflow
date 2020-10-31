@@ -28,7 +28,7 @@ public:
 	
 	//! reconstruct the levelset using fast marching
 	PYTHON() void reinitMarching(const FlagGrid& flags, Real maxTime=4.0, 
-			MACGrid* velTransport=NULL, bool ignoreWalls=false, bool correctOuterLayer=true, 
+			MACGrid* velTransport=nullptr, bool ignoreWalls=false, bool correctOuterLayer=true,
 			int obstacleType = FlagGrid::TypeObstacle );
 
 	//! create a triangle mesh from the levelset isosurface
@@ -36,7 +36,7 @@ public:
 	
 	//! union with another levelset
 	PYTHON() void join(const LevelsetGrid& o);
-	PYTHON() void subtract(const LevelsetGrid& o, const FlagGrid* flags=NULL, const int subtractType=0);
+	PYTHON() void subtract(const LevelsetGrid& o, const FlagGrid* flags=nullptr, const int subtractType=0);
 	
 	//! initialize levelset from flags (+/- 0.5 heaviside)
 	PYTHON() void initFromFlags(const FlagGrid& flags, bool ignoreWalls=false);

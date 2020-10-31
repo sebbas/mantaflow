@@ -92,7 +92,7 @@ void knApplySimpleNoiseVec3(const FlagGrid& flags, Grid<Vec3>& target, const Wav
 	target(i,j,k) += noise.evaluateCurl( Vec3(i,j,k)+Vec3(0.5) ) * scale * factor;
 }
 PYTHON() void applySimpleNoiseVec3(const FlagGrid& flags, Grid<Vec3>& target, const WaveletNoiseField& noise,
-                                                        Real scale=1.0 , const Grid<Real>* weight=NULL )
+                                                        Real scale=1.0 , const Grid<Real>* weight=nullptr )
 {
 	// note - passing a MAC grid here is slightly inaccurate, we should evaluate each component separately
 	knApplySimpleNoiseVec3(flags, target, noise, scale , weight );
@@ -110,7 +110,7 @@ void knApplySimpleNoiseReal(const FlagGrid& flags, Grid<Real>& target, const Wav
 	target(i,j,k) += noise.evaluate( Vec3(i,j,k)+Vec3(0.5) ) * scale * factor;
 }
 PYTHON() void applySimpleNoiseReal(const FlagGrid& flags, Grid<Real>& target, const WaveletNoiseField& noise,
-                                                        Real scale=1.0 , const Grid<Real>* weight=NULL )
+                                                        Real scale=1.0 , const Grid<Real>* weight=nullptr )
 {
 	knApplySimpleNoiseReal(flags, target, noise, scale , weight );
 }
@@ -154,7 +154,7 @@ void knApplyNoiseVec3(const FlagGrid& flags, Grid<Vec3>& target, const WaveletNo
 	target(i,j,k) += noiseVec3;
 } 
 PYTHON() void applyNoiseVec3(const FlagGrid& flags, Grid<Vec3>& target, const WaveletNoiseField& noise,
-                                                        Real scale=1.0 , Real scaleSpatial=1.0 , const Grid<Real>* weight=NULL , const Grid<Vec3>* uv=NULL )
+                                                        Real scale=1.0 , Real scaleSpatial=1.0 , const Grid<Real>* weight=nullptr , const Grid<Vec3>* uv=nullptr )
 {
 	// check whether the uv grid has a different resolution
 	bool uvInterpol = false; 
@@ -201,7 +201,7 @@ PYTHON() void computeWaveletCoeffs(Grid<Real>& input)
 }
 
 // note - alomst the same as for vorticity confinement
-PYTHON() void computeVorticity(const MACGrid& vel, Grid<Vec3>& vorticity, Grid<Real>* norm=NULL) {
+PYTHON() void computeVorticity(const MACGrid& vel, Grid<Vec3>& vorticity, Grid<Real>* norm=nullptr) {
 	Grid<Vec3> velCenter(vel.getParent());
 	GetCentered(velCenter, vel);
 	CurlOp(velCenter, vorticity);

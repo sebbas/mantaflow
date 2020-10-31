@@ -276,7 +276,7 @@ public:
 	//! interface functions, using assert instead of pure virtual for python compatibility
 	virtual IndexInt  getSizeSlow() const { assertMsg( false , "Dont use, override..."); return 0; }
 	virtual void addEntry()   { assertMsg( false , "Dont use, override..."); return;   }
-	virtual MeshDataBase* clone() { assertMsg( false , "Dont use, override..."); return NULL; }
+	virtual MeshDataBase* clone() { assertMsg( false , "Dont use, override..."); return nullptr; }
 	virtual MdataType getType() const { assertMsg( false , "Dont use, override..."); return TypeNone; }
 	virtual void resize(IndexInt size)     { assertMsg( false , "Dont use, override..."); return;  }
 	virtual void copyValueSlow(IndexInt from, IndexInt to) { assertMsg( false , "Dont use, override..."); return;  }
@@ -345,7 +345,7 @@ public:
 	PYTHON() Real getMax();
 	PYTHON() Real getMin();
 
-	PYTHON() T    sum(const MeshDataImpl<int> *t=NULL, const int itype=0) const;
+	PYTHON() T    sum(const MeshDataImpl<int> *t=nullptr, const int itype=0) const;
 	PYTHON() Real sumSquare() const;
 	PYTHON() Real sumMagnitude() const;
 

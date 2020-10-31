@@ -396,7 +396,7 @@ template<> bool isPy<std::vector<float>>(PyObject* obj) {
 //******************************************************************************
 // PbArgs class defs
 
-PbArgs PbArgs::EMPTY(NULL,NULL);
+PbArgs PbArgs::EMPTY(nullptr,nullptr);
 
 PbArgs::PbArgs(PyObject* linarg, PyObject* dict) : mLinArgs(0), mKwds(0) {
 	setup(linarg, dict);
@@ -473,14 +473,14 @@ void PbArgs::check() {
 }
 
 FluidSolver* PbArgs::obtainParent() {
-	FluidSolver* solver = getPtrOpt<FluidSolver>("solver",-1,NULL);
+	FluidSolver* solver = getPtrOpt<FluidSolver>("solver",-1,nullptr);
 	if (solver != 0) return solver;
 	
 	for(map<string, DataElement>::iterator it = mData.begin(); it != mData.end(); it++) {
 		PbClass* obj = Pb::objFromPy(it->second.obj);
 
 		if (obj) {
-			if (solver == NULL) 
+			if (solver == nullptr)
 				solver = obj->getParent();
 		}
 	}
@@ -488,7 +488,7 @@ FluidSolver* PbArgs::obtainParent() {
 		PbClass* obj = Pb::objFromPy(it->obj);
 		
 		if (obj) {
-			if (solver == NULL) 
+			if (solver == nullptr)
 				solver = obj->getParent();
 		}
 	}
@@ -509,7 +509,7 @@ PyObject* PbArgs::getItem(const std::string& key, bool strict, ArgLocker* lk) {
 	if (lu == mData.end()) {
 		if (strict)
 			errMsg ("Argument '" + key + "' is not defined.");
-		return NULL;
+		return nullptr;
 	}
 	PbClass* pbo = Pb::objFromPy(lu->second.obj);
 	// try to lock
@@ -520,7 +520,7 @@ PyObject* PbArgs::getItem(const std::string& key, bool strict, ArgLocker* lk) {
 PyObject* PbArgs::getItem(size_t number, bool strict, ArgLocker* lk) {
 	if (number >= mLinData.size()) {
 		if (!strict)
-			return NULL;
+			return nullptr;
 		stringstream s;
 		s << "Argument number #" << number << " not specified.";
 		errMsg(s.str());

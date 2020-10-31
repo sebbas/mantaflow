@@ -569,7 +569,7 @@ int writeGridVol<Real>(const string& name, Grid<Real>* grid) {
 	header.bboxMax = Vec3( 0.5);
 
 	FILE* fp = fopen( name.c_str(), "wb" );
-	if (fp == NULL) {
+	if (fp == nullptr) {
 		errMsg("writeGridVol: Cannot open '" << name << "'");
 		return 0;
 	}
@@ -603,7 +603,7 @@ int readGridVol<Real>(const string& name, Grid<Real>* grid) {
 	
 	volHeader header; 
 	FILE* fp = fopen( name.c_str(), "rb" );
-	if (fp == NULL) {
+	if (fp == nullptr) {
 		errMsg("readGridVol: Cannot open '" << name << "'");
 		return 0;
 	}
@@ -688,11 +688,11 @@ int readGrid4dUni(const string& name, Grid4d<T>* grid, int readTslice, Grid4d<T>
 	if(slice) debMsg( "reading slice " << slice->getName() << ",t="<<readTslice<<" from uni file " << name ,1);
 
 #	if NO_ZLIB!=1
-	gzFile gzf = NULL;
+	gzFile gzf = nullptr;
 	char ID[5]={0,0,0,0,0};
 
 	// optionally - reuse file handle, if valid one is passed in fileHandle pointer...
-	if( (!fileHandle) || (fileHandle && (*fileHandle == NULL)) ) {
+	if( (!fileHandle) || (fileHandle && (*fileHandle == nullptr)) ) {
 		gzf = (gzFile) safeGzopen(name.c_str(), "rb");
 		if (!gzf) {
 			errMsg("readGrid4dUni: can't open file "<<name);
@@ -787,11 +787,11 @@ int readGrid4dUni(const string& name, Grid4d<T>* grid, int readTslice, Grid4d<T>
 };
 void readGrid4dUniCleanup(void** fileHandle) {
 #	if NO_ZLIB!=1
-	gzFile gzf = NULL; 
+	gzFile gzf = nullptr;
 	if( fileHandle) {
 		gzf = (gzFile)(*fileHandle);
 		gzclose(gzf);
-		*fileHandle = NULL;
+		*fileHandle = nullptr;
 	}
 #	else
 	debMsg("file format not supported without zlib", 1);
@@ -960,7 +960,7 @@ int readGridsNumpy(const string& name, std::vector<PbClass*>* grids) {
 }
 
 // adopted from getUniFileSize
-void getNpzFileSize(const string& name, int& x, int& y, int& z, int* t = NULL, std::string* info = NULL) {
+void getNpzFileSize(const string& name, int& x, int& y, int& z, int* t = nullptr, std::string* info = nullptr) {
 	x = y = z = 0;
 
 #	if FLOATINGPOINT_PRECISION!=1
