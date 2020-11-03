@@ -137,17 +137,16 @@ void apicMapPartsToMAC(
 	MACGrid *mass=nullptr, const ParticleDataImpl<int> *ptype=nullptr, const int exclude=0, const int boundaryWidth=0)
 {
 	// affine map: let's assume that the particle mass is constant, 1.0
-	if(!mass) {
-		MACGrid tmpmass(vel.getParent());
-		mass = &tmpmass;
-	}
+	MACGrid tmpmass(vel.getParent());
 
-	mass->clear();
+	tmpmass.clear();
 	vel.clear();
 
-	knApicMapLinearVec3ToMACGrid(parts, *mass, vel, partVel, cpx, cpy, cpz, ptype, exclude, boundaryWidth);
-	mass->stomp(VECTOR_EPSILON);
-	vel.safeDivide(*mass);
+	knApicMapLinearVec3ToMACGrid(parts, tmpmass, vel, partVel, cpx, cpy, cpz, ptype, exclude, boundaryWidth);
+	tmpmass.stomp(VECTOR_EPSILON);
+	vel.safeDivide(tmpmass);
+
+	if (mass) (*mass).swap(tmpmass);
 }
 
 KERNEL(pts)
