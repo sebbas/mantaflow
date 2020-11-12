@@ -111,11 +111,10 @@ void knFlipSampleSecondaryParticlesMoreCylinders(
 	const FlagGrid &flags, const MACGrid &v, BasicParticleSystem &pts_sec,
 	ParticleDataImpl<Vec3> &v_sec, ParticleDataImpl<Real> &l_sec, const Real lMin, const Real lMax,
 	const Grid<Real> &potTA, const Grid<Real> &potWC, const Grid<Real> &potKE, const Grid<Real> &neighborRatio,
-	const Real c_s, const Real c_b, const Real k_ta, const Real k_wc, const Real dt, const int itype = FlagGrid::TypeFluid) {
+	const Real c_s, const Real c_b, const Real k_ta, const Real k_wc, const Real dt, const int itype, RandomStream &rand) {
 
 	if (!(flags(i, j, k) & itype)) return;
 
-	static RandomStream mRand(9832);
 	Real radius = 0.25;	//diameter=0.5 => sampling with two cylinders in each dimension since cell size=1
 	for (Real x = i - radius; x <= i + radius; x += 2 * radius) {
 		for (Real y = j - radius; y <= j + radius; y += 2 * radius) {
@@ -134,16 +133,16 @@ void knFlipSampleSecondaryParticlesMoreCylinders(
 				Vec3 e2 = getNormalized(cross(e1, dir));			//perpendicular to dir and e1, so e1 and e1 create reference plane
 
 				for (int di = 0; di < n; di++) {
-					const Real r = radius * sqrt(mRand.getReal());			//distance to cylinder axis
-					const Real theta = mRand.getReal() * Real(2) * M_PI;	//azimuth
-					const Real h = mRand.getReal() * norm(dt*vi);			//distance to reference plane
+					const Real r = radius * sqrt(rand.getReal());			//distance to cylinder axis
+					const Real theta = rand.getReal() * Real(2) * M_PI;	//azimuth
+					const Real h = rand.getReal() * norm(dt*vi);			//distance to reference plane
 					Vec3 xd = xi + r*cos(theta)*e1 + r*sin(theta)*e2 + h*getNormalized(vi);
 					if (!flags.is3D()) xd.z = 0;
 					pts_sec.add(xd);
 
 					v_sec[v_sec.size() - 1] = r*cos(theta)*e1 + r*sin(theta)*e2 + vi;	//init velocity of new particle
 					Real temp = (KE + TA + WC) / 3;
-					l_sec[l_sec.size() - 1] = ((lMax - lMin) * temp) + lMin + mRand.getReal()*0.1;	//init lifetime of new particle
+					l_sec[l_sec.size() - 1] = ((lMax - lMin) * temp) + lMin + rand.getReal()*0.1;	//init lifetime of new particle
 
 					//init type of new particle
 					if (neighborRatio(i, j, k) < c_s) { pts_sec[pts_sec.size() - 1].flag = ParticleBase::PSPRAY; }
@@ -162,7 +161,7 @@ void knFlipSampleSecondaryParticles(
 	const FlagGrid &flags, const MACGrid &v, BasicParticleSystem &pts_sec,
 	ParticleDataImpl<Vec3> &v_sec, ParticleDataImpl<Real> &l_sec, const Real lMin, const Real lMax,
 	const Grid<Real> &potTA, const Grid<Real> &potWC, const Grid<Real> &potKE, const Grid<Real> &neighborRatio,
-	const Real c_s, const Real c_b, const Real k_ta, const Real k_wc, const Real dt, const int itype = FlagGrid::TypeFluid) {
+	const Real c_s, const Real c_b, const Real k_ta, const Real k_wc, const Real dt, const int itype, RandomStream &rand) {
 
 	if (!(flags(i, j, k) & itype)) return;
 
@@ -172,25 +171,24 @@ void knFlipSampleSecondaryParticles(
 
 	const int n = KE * (k_ta*TA + k_wc*WC) * dt;		//number of secondary particles
 	if (n == 0) return;
-	static RandomStream mRand(9832);
 
-	Vec3 xi = Vec3(i, j, k) + mRand.getVec3(); //randomized offset uniform in cell
+	Vec3 xi = Vec3(i, j, k) + rand.getVec3(); //randomized offset uniform in cell
 	Vec3 vi = v.getInterpolated(xi);
 	Vec3 dir = dt*vi;									//direction of movement of current particle
 	Vec3 e1 = getNormalized(Vec3(dir.z, 0, -dir.x));	//perpendicular to dir
 	Vec3 e2 = getNormalized(cross(e1, dir));			//perpendicular to dir and e1, so e1 and e1 create reference plane
 
 	for (int di = 0; di < n; di++) {
-		const Real r = Real(0.5) * sqrt(mRand.getReal());		//distance to cylinder axis
-		const Real theta = mRand.getReal() * Real(2) * M_PI;	//azimuth
-		const Real h = mRand.getReal() * norm(dt*vi);			//distance to reference plane
+		const Real r = Real(0.5) * sqrt(rand.getReal());		//distance to cylinder axis
+		const Real theta = rand.getReal() * Real(2) * M_PI;	//azimuth
+		const Real h = rand.getReal() * norm(dt*vi);			//distance to reference plane
 		Vec3 xd = xi + r*cos(theta)*e1 + r*sin(theta)*e2 + h*getNormalized(vi);
 		if (!flags.is3D()) xd.z = 0;
 		pts_sec.add(xd);
 
 		v_sec[v_sec.size() - 1] = r*cos(theta)*e1 + r*sin(theta)*e2 + vi;	//init velocity of new particle
 		Real temp = (KE + TA + WC) / 3;
-		l_sec[l_sec.size() - 1] = ((lMax - lMin) * temp) + lMin + mRand.getReal()*0.1;	//init lifetime of new particle
+		l_sec[l_sec.size() - 1] = ((lMax - lMin) * temp) + lMin + rand.getReal()*0.1;	//init lifetime of new particle
 
 		//init type of new particle
 		if (neighborRatio(i, j, k) < c_s) { pts_sec[pts_sec.size() - 1].flag = ParticleBase::PSPRAY; }
@@ -208,11 +206,14 @@ void flipSampleSecondaryParticles(
 	float timestep = dt;
 	if (dt <= 0) timestep = flags.getParent()->getDt();
 
+	/* Every particle needs to get a different random offset. */
+	RandomStream rand(pts_sec.getSeed());
+
 	if (mode == "single") {
-		knFlipSampleSecondaryParticles(flags, v, pts_sec, v_sec, l_sec, lMin, lMax, potTA, potWC, potKE, neighborRatio, c_s, c_b, k_ta, k_wc, timestep, itype);
+		knFlipSampleSecondaryParticles(flags, v, pts_sec, v_sec, l_sec, lMin, lMax, potTA, potWC, potKE, neighborRatio, c_s, c_b, k_ta, k_wc, timestep, itype, rand);
 	}
 	else if (mode == "multiple") {
-		knFlipSampleSecondaryParticlesMoreCylinders(flags, v, pts_sec, v_sec, l_sec, lMin, lMax, potTA, potWC, potKE, neighborRatio, c_s, c_b, k_ta, k_wc, timestep, itype);
+		knFlipSampleSecondaryParticlesMoreCylinders(flags, v, pts_sec, v_sec, l_sec, lMin, lMax, potTA, potWC, potKE, neighborRatio, c_s, c_b, k_ta, k_wc, timestep, itype, rand);
 	}
 	else {
 		throw std::invalid_argument("Unknown mode: use \"single\" or \"multiple\" instead!");

@@ -35,8 +35,8 @@ PYTHON() void sampleFlagsWithParticles(const FlagGrid& flags, BasicParticleSyste
 	const bool is3D = flags.is3D();
 	const Real jlen = randomness / discretization;
 	const Vec3 disp (1.0 / discretization, 1.0 / discretization, 1.0/discretization);
-	RandomStream mRand(9832);
- 
+	RandomStream rand(parts.getSeed());
+
 	FOR_IJK_BND(flags, 0) {
 		if ( flags.isObstacle(i,j,k) ) continue;
 		if ( flags.isFluid(i,j,k) ) {
@@ -45,7 +45,7 @@ PYTHON() void sampleFlagsWithParticles(const FlagGrid& flags, BasicParticleSyste
 			for (int dj=0; dj<discretization; dj++)
 			for (int di=0; di<discretization; di++) {
 				Vec3 subpos = pos + disp * Vec3(0.5+di, 0.5+dj, 0.5+dk);
-				subpos += jlen * (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+				subpos += jlen * (Vec3(1,1,1) - 2.0 * rand.getVec3());
 				if(!is3D) subpos[2] = 0.5; 
 				parts.addBuffered(subpos);
 			}
@@ -64,7 +64,7 @@ PYTHON() void sampleLevelsetWithParticles(const LevelsetGrid& phi, const FlagGri
 	const bool is3D = phi.is3D();
 	const Real jlen = randomness / discretization;
 	const Vec3 disp (1.0 / discretization, 1.0 / discretization, 1.0/discretization);
-	RandomStream mRand(9832);
+	RandomStream rand(parts.getSeed());
  
 	if(reset) {
 		parts.clear(); 
@@ -80,7 +80,7 @@ PYTHON() void sampleLevelsetWithParticles(const LevelsetGrid& phi, const FlagGri
 			for (int dj=0; dj<discretization; dj++)
 			for (int di=0; di<discretization; di++) {
 				Vec3 subpos = pos + disp * Vec3(0.5+di, 0.5+dj, 0.5+dk);
-				subpos += jlen * (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+				subpos += jlen * (Vec3(1,1,1) - 2.0 * rand.getVec3());
 				if(!is3D) subpos[2] = 0.5; 
 				if( phi.getInterpolated(subpos) > 0. ) continue; 
 				if(particleFlag < 0){
@@ -107,7 +107,7 @@ PYTHON() void sampleShapeWithParticles(const Shape& shape, const FlagGrid& flags
 	const bool is3D = flags.is3D();
 	const Real jlen = randomness / discretization;
 	const Vec3 disp (1.0 / discretization, 1.0 / discretization, 1.0/discretization);
-	RandomStream mRand(9832);
+	RandomStream rand(parts.getSeed());
 
 	if(reset) {
 		parts.clear();
@@ -122,7 +122,7 @@ PYTHON() void sampleShapeWithParticles(const Shape& shape, const FlagGrid& flags
 		for (int dj=0; dj<discretization; dj++)
 		for (int di=0; di<discretization; di++) {
 			Vec3 subpos = pos + disp * Vec3(0.5+di, 0.5+dj, 0.5+dk);
-			subpos += jlen * (Vec3(1,1,1) - 2.0 * mRand.getVec3());
+			subpos += jlen * (Vec3(1,1,1) - 2.0 * rand.getVec3());
 			if(!is3D) subpos[2] = 0.5;
 			if(exclude && exclude->getInterpolated(subpos) <= 0.) continue;
 			if(!shape.isInside(subpos)) continue;
@@ -225,7 +225,7 @@ PYTHON() void adjustNumber(BasicParticleSystem& parts, const MACGrid& vel, const
 	}
 
 	// seed new particles
-	RandomStream mRand(9832);
+	RandomStream rand(parts.getSeed());
 	FOR_IJK(tmp) {
 		int cnt = tmp(i,j,k);
 		
@@ -236,7 +236,7 @@ PYTHON() void adjustNumber(BasicParticleSystem& parts, const MACGrid& vel, const
 
 		if (flags.isFluid(i,j,k) && cnt < minParticles) {
 			for (int m=cnt; m < minParticles; m++) { 
-				Vec3 pos = Vec3(i,j,k) + mRand.getVec3();
+				Vec3 pos = Vec3(i,j,k) + rand.getVec3();
 				//Vec3 pos (i + 0.5, j + 0.5, k + 0.5); // cell center
 				parts.addBuffered( pos ); 
 			}

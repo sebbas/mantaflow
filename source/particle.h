@@ -42,7 +42,7 @@ public:
 		PINVALID      = (1<<30), // unused
 	};
 
-	PYTHON() ParticleBase(FluidSolver* parent);
+	PYTHON() ParticleBase(FluidSolver* parent, int fixedSeed=-1);
 	virtual ~ParticleBase();
 
 	//! copy all the particle data thats registered with the other particle system to this one
@@ -60,6 +60,8 @@ public:
 
 	virtual void resize(IndexInt size)    { assertMsg( false , "Dont use, override..."); return; }
 	virtual void resizeAll(IndexInt size) { assertMsg( false , "Dont use, override..."); return; }
+
+	inline int getSeed() { return mSeed; }
 
 	//! particle data functions
 
@@ -84,7 +86,7 @@ public:
 	//! expose maximum number of particles to python
 	PYTHON(name=maxParticles) int mMaxParticles;
 
-protected:  
+protected:
 	//! new particle candidates
 	std::vector<Vec3> mNewBufferPos;
 	std::vector<int> mNewBufferFlag;
@@ -100,6 +102,11 @@ protected:
 	std::vector< ParticleDataImpl<int> *>  mPdataInt;
 	//! indicate that pdata of this particle system is copied, and needs to be freed
 	bool mFreePdata;
+
+	//! custom seed for particle systems, used by plugins
+	int mSeed;
+	//! fix global random seed storage, used mainly by functions in this class
+	static int globalSeed;
 };
 
 
@@ -542,8 +549,7 @@ void ParticleSystem<S>::advectInGrid(
 
 KERNEL(pts, single) // no thread-safe random gen yet
 template<class S>
-void KnProjectParticles(ParticleSystem<S>& part, Grid<Vec3>& gradient) {
-	static RandomStream rand (3123984);
+void KnProjectParticles(ParticleSystem<S>& part, Grid<Vec3>& gradient, RandomStream &rand) {
 	const double jlen = 0.1;
 	
 	if (part.isActive(idx)) {
@@ -564,7 +570,8 @@ void KnProjectParticles(ParticleSystem<S>& part, Grid<Vec3>& gradient) {
 
 template<class S>
 void ParticleSystem<S>::projectOutside(Grid<Vec3> &gradient) {
-	KnProjectParticles<S>(*this, gradient);
+	RandomStream rand(globalSeed);
+	KnProjectParticles<S>(*this, gradient, rand);
 }
 
 KERNEL(pts) template<class S>
@@ -650,13 +657,13 @@ void ParticleSystem<S>::insertBufferedParticles() {
 
 	int insertFlag;
 	Vec3 insertPos;
-	static RandomStream mRand(9832);
+	RandomStream rand(globalSeed);
 	for (IndexInt i=0; i<numNewParts; ++i) {
 
 		// get random index in newBuffer vector
 		// we are inserting particles randomly so that they are sampled uniformly in the fluid region
 		// otherwise, regions of fluid can remain completely empty once mData.size() == maxParticles is reached.
-		int randIndex = floor(mRand.getReal() * mNewBufferPos.size());
+		int randIndex = floor(rand.getReal() * mNewBufferPos.size());
 
 		// get elements from new buffers with random index
 		std::swap(mNewBufferPos[randIndex], mNewBufferPos.back());
