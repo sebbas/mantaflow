@@ -96,7 +96,7 @@ PYTHON() template<class T>
 class Grid : public GridBase {
 public:
 	//! init new grid, values are set to zero
-	PYTHON() Grid(FluidSolver* parent, bool show = true);
+	PYTHON() Grid(FluidSolver* parent, bool show = true, bool sparse = false);
 	//! init new grid with an existing array
 	Grid(FluidSolver* parent, T* data, bool show = true);
 	//! create new & copy content from another grid
@@ -138,6 +138,10 @@ public:
 	inline T& operator[](IndexInt idx)             { DEBUG_ONLY(checkIndex(idx)); return mData[idx]; }
 	//! access data
 	inline const T operator[](IndexInt idx) const  { DEBUG_ONLY(checkIndex(idx)); return mData[idx]; }
+	//! raw data access
+	inline T* getData() const                      { return mData; }
+	//! query if this grid should be saved as a sparse grid
+	inline bool saveSparse()                       { return mSaveSparse; }
 
 	//! set data
 	inline void set(int i, int j, int k, T& val)              { mData[index(i,j,k)] = val; }
@@ -211,7 +215,7 @@ public:
 
 	//! get data pointer of grid
 	PYTHON() std::string getDataPointer();
-	
+
 	//! debugging helper, print grid from python. skip boundary of width bnd
 	PYTHON() void printGrid(int zSlice=-1,  bool printIndex=false, int bnd=1); 
 
@@ -234,7 +238,8 @@ public:
 
 protected:
 	T* mData;
-	bool externalData;		// True if mData is managed outside of the Fluidsolver
+	bool mExternalData; // True if mData is managed outside of the Fluidsolver
+	bool mSaveSparse;   // True if this grid may be cached in a sparse structure
 };
 
 // Python doesn't know about templates: explicit aliases needed
@@ -245,9 +250,9 @@ PYTHON() alias Grid<Vec3> VecGrid;
 //! Special function for staggered grids
 PYTHON() class MACGrid : public Grid<Vec3> {
 public:
-	PYTHON() MACGrid(FluidSolver* parent, bool show=true) : Grid<Vec3>(parent, show) { 
+	PYTHON() MACGrid(FluidSolver* parent, bool show=true, bool sparse=false) : Grid<Vec3>(parent, show, sparse) {
 		mType = (GridType)(TypeMAC | TypeVec3); }
-        MACGrid(FluidSolver* parent, Vec3* data, bool show=true) : Grid<Vec3>(parent, data, show) { 
+	MACGrid(FluidSolver* parent, Vec3* data, bool show=true) : Grid<Vec3>(parent, data, show) {
 		mType = (GridType)(TypeMAC | TypeVec3); }
 	
 	// specialized functions for interpolating MAC information
@@ -286,7 +291,7 @@ protected:
 //! Special functions for FlagGrid
 PYTHON() class FlagGrid : public Grid<int> {
 public:
-	PYTHON() FlagGrid(FluidSolver* parent, int dim=3, bool show=true) : Grid<int>(parent, show) { 
+	PYTHON() FlagGrid(FluidSolver* parent, int dim=3, bool show=true, bool sparse=false) : Grid<int>(parent, show, sparse) {
 		mType = (GridType)(TypeFlags | TypeInt); }
 	FlagGrid(FluidSolver* parent, int* data, int dim = 3, bool show=true) : Grid<int>(parent, data, show) { 
             mType = (GridType)(TypeFlags | TypeInt); }	

@@ -39,7 +39,7 @@ PYTHON() int load(const string& name, std::vector<PbClass*>& objects, float worl
 	return 0;
 }
 
-PYTHON() int save(const string& name, std::vector<PbClass*>& objects, float worldSize=1.0, bool skipDeletedParts=false, int compression=COMPRESSION_ZIP, bool precisionHalf=true, int precision=PRECISION_HALF) {
+PYTHON() int save(const string& name, std::vector<PbClass*>& objects, float worldSize=1.0, bool skipDeletedParts=false, int compression=COMPRESSION_ZIP, bool precisionHalf=true, int precision=PRECISION_HALF, float clip=1e-4, const Grid<Real>* clipGrid=nullptr) {
 
 	if (!precisionHalf) {
 		debMsg("Warning: precisionHalf argument is deprecated. Please use precision level instead", 0);
@@ -57,7 +57,7 @@ PYTHON() int save(const string& name, std::vector<PbClass*>& objects, float worl
 	else if (ext == ".vol")
 		return writeGridsVol(name, &objects);
 	if (ext == ".vdb")
-		return writeObjectsVDB(name, &objects, worldSize, skipDeletedParts, compression, precision);
+		return writeObjectsVDB(name, &objects, worldSize, skipDeletedParts, compression, precision, clip, clipGrid);
 	else if (ext == ".npz")
 		return writeGridsNumpy(name, &objects);
 	else if (ext == ".txt")
