@@ -59,16 +59,9 @@ Grid<T>::Grid(FluidSolver* parent, bool show)
 }
 
 template<class T>
-Grid<T>::Grid(FluidSolver* parent, T* data, bool show)
-        : GridBase(parent), mData(data), externalData(true)
+Grid<T>::Grid(FluidSolver* parent, T* data, bool show) : Grid<T>::Grid(parent, show)
 {
-        mType = typeList<T>();
-        mSize = parent->getGridSize();
-
-        mStrideZ = parent->is2D() ? 0 : (mSize.x * mSize.y);
-        mDx = 1.0 / mSize.max();
-
-        setHidden(!show);
+	mData = data;
 }
 
 template<class T>
