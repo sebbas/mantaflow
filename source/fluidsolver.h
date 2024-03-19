@@ -68,6 +68,8 @@ public:
 	//! Per frame duration. Blender needs access in order to restore value in new solver object
 	PYTHON(name=timePerFrame) Real mTimePerFrame;
 
+	PYTHON(name=updateGui) bool mUpdateGui;
+
 protected:
 	Vec3i     mGridSize;
 	const int mDim;

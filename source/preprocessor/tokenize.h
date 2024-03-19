@@ -32,7 +32,8 @@ const std::string unsupportedKeywords[] = {"and", "and", "and_eq", "auto", "bita
 
 inline bool isIntegral(const std::string& t) {
 	return t=="int" || t=="char" || t=="unsigned" || t=="bool" || t=="float" || t=="long" || 
-		   t=="double" || t=="Real" || t=="Vec3" || t=="Vec3i" || t=="string" || t=="std::string" ||
+		   t=="double" || t=="Real" || t=="Vec3" || t=="Vec3i" || t=="Vec4" || t=="Vec4i" ||
+		   t=="Matrix3x3f" || t=="Matrix2x2f" || t=="string" || t=="std::string" ||
 		   t=="PbType" || t=="PbTypeVec";
 }
 

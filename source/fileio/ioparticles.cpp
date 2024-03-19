@@ -303,12 +303,38 @@ int readPdataUni(const std::string& name, ParticleDataImpl<T>* pdata ) {
 #	endif
 }
 
+template <>
+int writePdataUni(const std::string& name, ParticleDataImpl<Matrix3x3f>* pdata ) {
+	/* Dummy implementation for Matrix3x3 export. */
+	return 0;
+}
+template <>
+int readPdataUni(const std::string& name, ParticleDataImpl<Matrix3x3f>* pdata ) {
+	/* Dummy implementation for Matrix3x3 import. */
+	return 0;
+}
+template <>
+int writePdataUni(const std::string& name, ParticleDataImpl<Matrix2x2f>* pdata ) {
+	/* Dummy implementation for Matrix2x2 export. */
+	return 0;
+}
+template <>
+int readPdataUni(const std::string& name, ParticleDataImpl<Matrix2x2f>* pdata ) {
+	/* Dummy implementation for Matrix2x2 import. */
+	return 0;
+}
+
 // explicit instantiation
 template int writePdataUni<int> (const std::string& name, ParticleDataImpl<int>* pdata);
 template int writePdataUni<Real>(const std::string& name, ParticleDataImpl<Real>* pdata);
 template int writePdataUni<Vec3>(const std::string& name, ParticleDataImpl<Vec3>* pdata);
+template int writePdataUni<Matrix3x3f>(const std::string& name, ParticleDataImpl<Matrix3x3f>* pdata);
+template int writePdataUni<Matrix2x2f>(const std::string& name, ParticleDataImpl<Matrix2x2f>* pdata);
+
 template int readPdataUni<int>  (const std::string& name, ParticleDataImpl<int>* pdata);
 template int readPdataUni<Real> (const std::string& name, ParticleDataImpl<Real>* pdata);
 template int readPdataUni<Vec3> (const std::string& name, ParticleDataImpl<Vec3>* pdata);
+template int readPdataUni<Matrix3x3f> (const std::string& name, ParticleDataImpl<Matrix3x3f>* pdata);
+template int readPdataUni<Matrix2x2f> (const std::string& name, ParticleDataImpl<Matrix2x2f>* pdata);
 
 } //namespace

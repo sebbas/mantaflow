@@ -62,6 +62,8 @@ OPTION(DEBUG_PYTHON_WITH_RELEASE "Special debugging option for python, link with
 OPTION(PYTHON_VERSION "Manually choose python version" OFF)
 # numpy / tensorflow integration
 OPTION(NUMPY "Compile with numpy integration?" OFF)
+# Eigen integration
+OPTION(EIGEN "Compile with Eigen library?" OFF)
 
 # compile with openVDB support
 OPTION(OPENVDB "Exporting OpenVDB files" OFF)
@@ -209,6 +211,7 @@ set(PP_SOURCES
 	source/plugin/kepsilon.cpp
 	source/plugin/initplugins.cpp
 	source/plugin/meshplugins.cpp
+	source/plugin/mls-mpm.cpp
 	source/plugin/pressure.cpp
 	source/plugin/ptsplugins.cpp
 	source/plugin/secondaryparticles.cpp
@@ -248,6 +251,7 @@ set(PP_HEADERS
 set(NOPP_SOURCES
 	source/pwrapper/pymain.cpp
 	source/pwrapper/pclass.cpp
+	source/pwrapper/pmat3.cpp
 	source/pwrapper/pvec3.cpp
 	source/pwrapper/pconvert.cpp
 	source/pwrapper/registry.cpp
@@ -262,6 +266,7 @@ set(NOPP_HEADERS
 	source/pwrapper/registry.h
 	source/pwrapper/pconvert.h
 	source/util/integrator.h
+	source/util/matrixbase.h
 	source/util/vectorbase.h
 	source/util/vector4d.h
 	source/util/quaternion.h
@@ -505,6 +510,18 @@ if(NUMPY)
 	list(APPEND NOPP_SOURCES source/pwrapper/numpyWrap.cpp)
 	list(APPEND NOPP_HEADERS source/pwrapper/numpyWrap.h)
 	add_definitions( -DNUMPY=1 )
+endif()
+
+#******************************************************************************
+# optional - compile with Eigen support?
+if(EIGEN)
+	find_package(Eigen3 REQUIRED)
+	if("${EIGEN3_INCLUDE_DIR}" STREQUAL "")
+		message(FATAL_ERROR "No Eigen path found, please manually set EIGEN3_INCLUDE_DIR in CMakeLists.txt")
+	endif()
+	message("Using Eigen include path '${EIGEN3_INCLUDE_DIR}' ")
+	list(APPEND INCLUDE_PATHS ${EIGEN3_INCLUDE_DIR})
+	add_definitions( -DEIGEN=1 )
 endif()
 
 #******************************************************************************

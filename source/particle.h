@@ -16,6 +16,7 @@
 
 #include <vector>
 #include "grid.h"
+#include "matrixbase.h"
 #include "vectorbase.h"
 #include "integrator.h"
 #include "randomstream.h"
@@ -72,6 +73,8 @@ public:
 	void registerPdataReal(ParticleDataImpl<Real>* pdata);
 	void registerPdataVec3(ParticleDataImpl<Vec3>* pdata);
 	void registerPdataInt (ParticleDataImpl<int >* pdata);
+	void registerPdataMat3(ParticleDataImpl<Matrix3x3f>* pdata);
+	void registerPdataMat2(ParticleDataImpl<Matrix2x2f>* pdata);
 	//! remove a particle data entry
 	void deregister(ParticleDataBase* pdata);
 	//! add one zero entry to all data fields
@@ -100,6 +103,8 @@ protected:
 	std::vector< ParticleDataImpl<Real> *> mPdataReal;
 	std::vector< ParticleDataImpl<Vec3> *> mPdataVec3;
 	std::vector< ParticleDataImpl<int> *>  mPdataInt;
+	std::vector< ParticleDataImpl<Matrix3x3f> *> mPdataMat3;
+	std::vector< ParticleDataImpl<Matrix2x2f> *> mPdataMat2;
 	//! indicate that pdata of this particle system is copied, and needs to be freed
 	bool mFreePdata;
 
@@ -291,7 +296,7 @@ public:
 	virtual ~ParticleDataBase(); 
 
 	//! data type IDs, in line with those for grids
-	enum PdataType { TypeNone = 0, TypeReal = 1, TypeInt = 2, TypeVec3 = 4 };
+	enum PdataType { TypeNone = 0, TypeReal = 1, TypeInt = 2, TypeVec3 = 4, TypeMat3 = 64, TypeMat2 = 128 };
 
 	//! interface functions, using assert instead of pure virtual for python compatibility
 	virtual IndexInt  getSizeSlow() const { assertMsg( false , "Dont use, override..."); return 0; } 
@@ -334,7 +339,7 @@ public:
 	PYTHON() void clear();
 
 	//! set grid from which to get data...
-	PYTHON() void setSource(Grid<T>* grid, bool isMAC=false );
+	PYTHON() void setSource(GridBase* grid, bool isMAC=false);
 
 	//! particle data base interface
 	virtual IndexInt  getSizeSlow() const;
@@ -397,7 +402,8 @@ protected:
 PYTHON() alias ParticleDataImpl<int>  PdataInt;
 PYTHON() alias ParticleDataImpl<Real> PdataReal;
 PYTHON() alias ParticleDataImpl<Vec3> PdataVec3;
-
+PYTHON() alias ParticleDataImpl<Matrix3x3f> PdataMat3;
+PYTHON() alias ParticleDataImpl<Matrix2x2f> PdataMat2;
 
 //******************************************************************************
 // Implementation
@@ -620,6 +626,8 @@ void ParticleSystem<S>::compress() {
 			for(IndexInt pd=0; pd<(IndexInt)mPdataReal.size(); ++pd) mPdataReal[pd]->copyValue(nextRead, i);
 			for(IndexInt pd=0; pd<(IndexInt)mPdataVec3.size(); ++pd) mPdataVec3[pd]->copyValue(nextRead, i);
 			for(IndexInt pd=0; pd<(IndexInt)mPdataInt .size(); ++pd) mPdataInt [pd]->copyValue(nextRead, i);
+			for(IndexInt pd=0; pd<(IndexInt)mPdataMat3.size(); ++pd) mPdataMat3[pd]->copyValue(nextRead, i);
+			for(IndexInt pd=0; pd<(IndexInt)mPdataMat2.size(); ++pd) mPdataMat2[pd]->copyValue(nextRead, i);
 			mData[nextRead].flag = PINVALID;
 		}
 	}
@@ -687,6 +695,10 @@ void ParticleSystem<S>::insertBufferedParticles() {
 			mPdataVec3[pd]->initNewValue(partsSize, insertPos );
 		for(IndexInt pd=0; pd<(IndexInt)mPdataInt.size(); ++pd)
 			mPdataInt[pd]->initNewValue(partsSize, insertPos );
+		for(IndexInt pd=0; pd<(IndexInt)mPdataMat3.size(); ++pd)
+			mPdataMat3[pd]->initNewValue(partsSize, insertPos );
+		for(IndexInt pd=0; pd<(IndexInt)mPdataMat2.size(); ++pd)
+			mPdataMat2[pd]->initNewValue(partsSize, insertPos );
 		partsSize++;
 	}
 	debMsg("Added & initialized "<< numNewParts <<" particles", 2); // debug info
@@ -755,7 +767,7 @@ ParticleBase* ConnectedParticleSystem<DATA,CON>::clone() {
 	return nm;
 }
 
-template<class S>  
+template<class S>
 std::string ParticleSystem<S>::infoString() const { 
 	std::stringstream s;
 	s << "ParticleSys '" << getName() << "'\n-> ";
@@ -765,7 +777,7 @@ std::string ParticleSystem<S>::infoString() const {
 	return s.str();
 }
 	
-template<class S>  
+template<class S>
 inline void ParticleSystem<S>::checkPartIndex(IndexInt idx) const {
 	IndexInt mySize = this->size();
 	if (idx<0 || idx > mySize ) {
@@ -786,7 +798,7 @@ inline void ParticleDataBase::checkPartIndex(IndexInt idx) const {
 // set contents to zero, as for a grid
 template<class T>
 void ParticleDataImpl<T>::clear() {
-	for(IndexInt i=0; i<(IndexInt)mData.size(); ++i) mData[i] = 0.;
+	for(IndexInt i=0; i<(IndexInt)mData.size(); ++i) mData[i] = T(0.);
 }
 
 //! count by type flag

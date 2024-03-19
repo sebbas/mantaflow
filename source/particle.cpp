@@ -122,11 +122,21 @@ void ParticleBase::registerPdata(ParticleDataBase* pdata)
 		ParticleDataImpl<Vec3>* pd = dynamic_cast< ParticleDataImpl<Vec3>* >(pdata);
 		if(!pd) errMsg("Invalid pdata object posing as vec3!");
 		this->registerPdataVec3(pd);
+	} else if(pdata->getType() == ParticleDataBase::TypeMat3) {
+		ParticleDataImpl<Matrix3x3f>* pd = dynamic_cast< ParticleDataImpl<Matrix3x3f>* >(pdata);
+		if(!pd) errMsg("Invalid pdata object posing as mat3!");
+		this->registerPdataMat3(pd);
+	} else if(pdata->getType() == ParticleDataBase::TypeMat2) {
+		ParticleDataImpl<Matrix2x2f>* pd = dynamic_cast< ParticleDataImpl<Matrix2x2f>* >(pdata);
+		if(!pd) errMsg("Invalid pdata object posing as mat2!");
+		this->registerPdataMat2(pd);
 	}
 }
 void ParticleBase::registerPdataReal(ParticleDataImpl<Real>* pd) { mPdataReal.push_back(pd); }
 void ParticleBase::registerPdataVec3(ParticleDataImpl<Vec3>* pd) { mPdataVec3.push_back(pd); }
 void ParticleBase::registerPdataInt (ParticleDataImpl<int >* pd) { mPdataInt .push_back(pd); }
+void ParticleBase::registerPdataMat3(ParticleDataImpl<Matrix3x3f>* pd) { mPdataMat3.push_back(pd); }
+void ParticleBase::registerPdataMat2(ParticleDataImpl<Matrix2x2f>* pd) { mPdataMat2.push_back(pd); }
 
 void ParticleBase::addAllPdata()
 {
@@ -154,6 +164,8 @@ void BasicParticleSystem::writeParticlesText(const string name) const
 		for(IndexInt pd=0; pd<(IndexInt)mPdataInt.size() ; ++pd) ofs << mPdataInt [pd]->get(i)<<" ";
 		for(IndexInt pd=0; pd<(IndexInt)mPdataReal.size(); ++pd) ofs << mPdataReal[pd]->get(i)<<" ";
 		for(IndexInt pd=0; pd<(IndexInt)mPdataVec3.size(); ++pd) ofs << mPdataVec3[pd]->get(i)<<" ";
+		for(IndexInt pd=0; pd<(IndexInt)mPdataMat3.size(); ++pd) ofs << mPdataMat3[pd]->get(i)<<" ";
+		for(IndexInt pd=0; pd<(IndexInt)mPdataMat2.size(); ++pd) ofs << mPdataMat2[pd]->get(i)<<" ";
 		ofs << "\n";
 	}
 	ofs.close();
@@ -338,9 +350,9 @@ ParticleDataBase* ParticleDataImpl<T>::clone()
 }
 
 template<class T>
-void ParticleDataImpl<T>::setSource(Grid<T>* grid, bool isMAC)
+void ParticleDataImpl<T>::setSource(GridBase* grid, bool isMAC)
 {
-	mpGridSource = grid;
+	mpGridSource = (Grid<T>*) grid;
 	mGridSourceMAC = isMAC;
 	if (grid && isMAC) assertMsg( grid->getType() & GridBase::TypeMAC , "Given grid is not a valid MAC grid" );
 }
@@ -366,6 +378,17 @@ void ParticleDataImpl<Vec3>::initNewValue(IndexInt idx, Vec3 pos)
 		else
 			mData[idx] = ((MACGrid*)mpGridSource)->getInterpolated(pos);
 	}
+}
+// special handling needed for matrices
+template<>
+void ParticleDataImpl<Matrix3x3f>::initNewValue(IndexInt idx, Vec3 pos)
+{
+	mData[idx] = Matrix3x3f();
+}
+template<>
+void ParticleDataImpl<Matrix2x2f>::initNewValue(IndexInt idx, Vec3 pos)
+{
+	mData[idx] = Matrix2x2f();
 }
 
 template<typename T>
@@ -425,6 +448,16 @@ ParticleDataBase::PdataType ParticleDataImpl<Vec3>::getType() const
 {
 	return ParticleDataBase::TypeVec3;
 }
+template<>
+ParticleDataBase::PdataType ParticleDataImpl<Matrix3x3f>::getType() const
+{
+	return ParticleDataBase::TypeMat3;
+}
+template<>
+ParticleDataBase::PdataType ParticleDataImpl<Matrix2x2f>::getType() const
+{
+	return ParticleDataBase::TypeMat2;
+}
 
 // note, we need a flag value for functions such as advection
 // ideally, this value should never be modified
@@ -457,6 +490,50 @@ KERNEL(pts)                   void knPdataClampMaxVec3(ParticleDataImpl<Vec3>& m
 	me[idx].y = std::min(vmax, me[idx].y);
 	me[idx].z = std::min(vmax, me[idx].z);
 }
+KERNEL(pts)                   void knPdataClampMinMat3(ParticleDataImpl<Matrix3x3f>& me, const Real vmin)
+{
+	me[idx].v00 = std::max(vmin, me[idx].v00);
+	me[idx].v01 = std::max(vmin, me[idx].v01);
+	me[idx].v02 = std::max(vmin, me[idx].v02);
+
+	me[idx].v10 = std::max(vmin, me[idx].v10);
+	me[idx].v11 = std::max(vmin, me[idx].v11);
+	me[idx].v12 = std::max(vmin, me[idx].v12);
+
+	me[idx].v20 = std::max(vmin, me[idx].v20);
+	me[idx].v21 = std::max(vmin, me[idx].v21);
+	me[idx].v22 = std::max(vmin, me[idx].v22);
+}
+KERNEL(pts)                   void knPdataClampMaxMat3(ParticleDataImpl<Matrix3x3f>& me, const Real vmax)
+{
+	me[idx].v00 = std::min(vmax, me[idx].v00);
+	me[idx].v01 = std::min(vmax, me[idx].v01);
+	me[idx].v02 = std::min(vmax, me[idx].v02);
+
+	me[idx].v10 = std::min(vmax, me[idx].v10);
+	me[idx].v11 = std::min(vmax, me[idx].v11);
+	me[idx].v12 = std::min(vmax, me[idx].v12);
+
+	me[idx].v20 = std::min(vmax, me[idx].v20);
+	me[idx].v21 = std::min(vmax, me[idx].v21);
+	me[idx].v22 = std::min(vmax, me[idx].v22);
+}
+KERNEL(pts)                   void knPdataClampMinMat2(ParticleDataImpl<Matrix2x2f>& me, const Real vmin)
+{
+	me[idx].v00 = std::max(vmin, me[idx].v00);
+	me[idx].v01 = std::max(vmin, me[idx].v01);
+
+	me[idx].v10 = std::max(vmin, me[idx].v10);
+	me[idx].v11 = std::max(vmin, me[idx].v11);
+}
+KERNEL(pts)                   void knPdataClampMaxMat2(ParticleDataImpl<Matrix2x2f>& me, const Real vmax)
+{
+	me[idx].v00 = std::min(vmax, me[idx].v00);
+	me[idx].v01 = std::min(vmax, me[idx].v01);
+
+	me[idx].v10 = std::min(vmax, me[idx].v10);
+	me[idx].v11 = std::min(vmax, me[idx].v11);
+}
 
 // python operators
 
@@ -473,6 +550,16 @@ template<typename T>
 void ParticleDataImpl<T>::setConst(const T &s)
 {
 	knPdataSetScalar<T,T> op( *this, s );
+}
+template<>
+void ParticleDataImpl<Matrix3x3f>::setConst(const Matrix3x3f &s)
+{
+	knPdataSetScalar<Matrix3x3f, Matrix3x3f> op( *this, s );
+}
+template<>
+void ParticleDataImpl<Matrix2x2f>::setConst(const Matrix2x2f &s)
+{
+	knPdataSetScalar<Matrix2x2f, Matrix2x2f> op( *this, s );
 }
 
 template<typename T>
@@ -532,23 +619,32 @@ void ParticleDataImpl<T>::multConst(const T &s)
 {
 	knPdataMultScalar<T,T> op( *this, s );
 }
-
+template<>
+void ParticleDataImpl<Matrix3x3f>::multConst(const Matrix3x3f &s)
+{
+	knPdataMultScalar<Matrix3x3f,Matrix3x3f> op( *this, s );
+}
+template<>
+void ParticleDataImpl<Matrix2x2f>::multConst(const Matrix2x2f &s)
+{
+	knPdataMultScalar<Matrix2x2f,Matrix2x2f> op( *this, s );
+}
 
 template<typename T>
 void ParticleDataImpl<T>::clamp(const Real vmin, const Real vmax)
 {
-	knPdataClamp<T> op( *this, vmin, vmax );
+	knPdataClamp<T> op( *this, T(vmin), T(vmax) );
 }
 
 template<typename T>
 void ParticleDataImpl<T>::clampMin(const Real vmin)
 {
-	knPdataClampMin<T> op( *this, vmin );
+	knPdataClampMin<T> op( *this, T(vmin) );
 }
 template<typename T>
 void ParticleDataImpl<T>::clampMax(const Real vmax)
 {
-	knPdataClampMax<T> op( *this, vmax );
+	knPdataClampMax<T> op( *this, T(vmax) );
 }
 
 template<>
@@ -560,6 +656,28 @@ template<>
 void ParticleDataImpl<Vec3>::clampMax(const Real vmax)
 {
 	knPdataClampMaxVec3 op( *this, vmax );
+}
+
+template<>
+void ParticleDataImpl<Matrix3x3f>::clampMin(const Real vmin)
+{
+	knPdataClampMinMat3 op( *this, vmin );
+}
+template<>
+void ParticleDataImpl<Matrix3x3f>::clampMax(const Real vmax)
+{
+	knPdataClampMaxMat3 op( *this, vmax );
+}
+
+template<>
+void ParticleDataImpl<Matrix2x2f>::clampMin(const Real vmin)
+{
+	knPdataClampMinMat2 op( *this, vmin );
+}
+template<>
+void ParticleDataImpl<Matrix2x2f>::clampMax(const Real vmax)
+{
+	knPdataClampMaxMat2 op( *this, vmax );
 }
 
 template<typename T> KERNEL(pts, reduce=+) returns(T result=T(0.)) T    KnPtsSum(const ParticleDataImpl<T>& val, const ParticleDataImpl<int> *t, const int itype) { if(t && !((*t)[idx]&itype)) return; result += val[idx]; }
@@ -631,6 +749,44 @@ void ParticleDataImpl<T>::printPdata(IndexInt start, IndexInt stop, bool printIn
 	}
 	debMsg( sstr.str() , 1 );
 }
+template<>
+void ParticleDataImpl<Matrix3x3f>::printPdata(IndexInt start, IndexInt stop, bool printIndex)
+{
+	std::ostringstream sstr;
+	IndexInt s = (start>0 ? start : 0                      );
+	IndexInt e = (stop>0  ? stop  : (IndexInt)mData.size() );
+	s = Manta::clamp(s, (IndexInt)0, (IndexInt)mData.size());
+	e = Manta::clamp(e, (IndexInt)0, (IndexInt)mData.size());
+
+	for(IndexInt i=s; i<e; ++i) {
+		Matrix3x3f mat = mData[i];
+		if(printIndex) sstr << i<<": ";
+		sstr << "[" << mat(0,0) << "," << mat(0,1) << "," << mat(0,2);
+		sstr << "[" << mat(1,0) << "," << mat(1,1) << "," << mat(1,2);
+		sstr << "[" << mat(2,0) << "," << mat(2,1) << "," << mat(2,2);
+		sstr <<" ]\n";
+	}
+	debMsg( sstr.str() , 1 );
+}
+template<>
+void ParticleDataImpl<Matrix2x2f>::printPdata(IndexInt start, IndexInt stop, bool printIndex)
+{
+	std::ostringstream sstr;
+	IndexInt s = (start>0 ? start : 0                      );
+	IndexInt e = (stop>0  ? stop  : (IndexInt)mData.size() );
+	s = Manta::clamp(s, (IndexInt)0, (IndexInt)mData.size());
+	e = Manta::clamp(e, (IndexInt)0, (IndexInt)mData.size());
+
+	for(IndexInt i=s; i<e; ++i) {
+		Matrix2x2f mat = mData[i];
+		if(printIndex) sstr << i<<": ";
+		sstr << "[" << mat(0,0) << "," << mat(0,1);
+		sstr << "[" << mat(1,0) << "," << mat(1,1);
+		sstr <<" ]\n";
+	}
+	debMsg( sstr.str() , 1 );
+}
+
 template<class T> std::string ParticleDataImpl<T>::getDataPointer() {
 	std::ostringstream out;
 	out << &mData;
@@ -672,11 +828,123 @@ Real ParticleDataImpl<Vec3>::getMax() const
 	return sqrt(CompPdata_MaxVec3(*this));
 }
 
+// specials for mat3
+
+KERNEL(pts, reduce=min) returns(Real minVal=std::numeric_limits<Real>::max())
+Real CompPdata_MinMat3(const ParticleDataImpl<Matrix3x3f>& val)
+{
+	const Real s = val[idx].normEuclidean();
+	if(s < minVal) minVal = s;
+}
+
+KERNEL(pts, reduce=max) returns(Real maxVal=-std::numeric_limits<Real>::max())
+Real CompPdata_MaxMat3(const ParticleDataImpl<Matrix3x3f>& val)
+{
+	const Real s = val[idx].normEuclidean();
+	if(s > maxVal) maxVal = s;
+}
+
+KERNEL(pts, reduce=+) returns(Real result=0.)
+Real KnPtsSumSquareMat3(const ParticleDataImpl<Matrix3x3f>& val)
+{
+	result += square(val[idx].normEuclidean());
+
+}
+KERNEL(pts, reduce=+) returns(Real result=0.)
+Real KnPtsSumMagnitudeMat3(const ParticleDataImpl<Matrix3x3f>& val)
+{
+	result += val[idx].normEuclidean();
+}
+
+template<>
+Real ParticleDataImpl<Matrix3x3f>::getMin() const
+{
+	return sqrt(CompPdata_MinMat3(*this));
+}
+
+template<>
+Real ParticleDataImpl<Matrix3x3f>::getMaxAbs() const
+{
+	return sqrt(CompPdata_MaxMat3(*this));  // no minimum necessary here
+}
+
+template<>
+Real ParticleDataImpl<Matrix3x3f>::getMax() const
+{
+	return sqrt(CompPdata_MaxMat3(*this));
+}
+template<>
+Real ParticleDataImpl<Matrix3x3f>::sumSquare() const
+{
+	return KnPtsSumSquareMat3(*this);
+}
+template<>
+Real ParticleDataImpl<Matrix3x3f>::sumMagnitude() const
+{
+	return KnPtsSumMagnitudeMat3(*this);
+}
+
+// specials for mat2
+
+KERNEL(pts, reduce=min) returns(Real minVal=std::numeric_limits<Real>::max())
+Real CompPdata_MinMat2(const ParticleDataImpl<Matrix2x2f>& val)
+{
+	const Real s = val[idx].normEuclidean();
+	if(s < minVal) minVal = s;
+}
+
+KERNEL(pts, reduce=max) returns(Real maxVal=-std::numeric_limits<Real>::max())
+Real CompPdata_MaxMat2(const ParticleDataImpl<Matrix2x2f>& val)
+{
+	const Real s = val[idx].normEuclidean();
+	if(s > maxVal) maxVal = s;
+}
+
+KERNEL(pts, reduce=+) returns(Real result=0.)
+Real KnPtsSumSquareMat2(const ParticleDataImpl<Matrix2x2f>& val)
+{
+	result += square(val[idx].normEuclidean());
+
+}
+KERNEL(pts, reduce=+) returns(Real result=0.)
+Real KnPtsSumMagnitudeMat2(const ParticleDataImpl<Matrix2x2f>& val)
+{
+	result += val[idx].normEuclidean();
+}
+
+template<>
+Real ParticleDataImpl<Matrix2x2f>::getMin() const
+{
+	return sqrt(CompPdata_MinMat2(*this));
+}
+
+template<>
+Real ParticleDataImpl<Matrix2x2f>::getMaxAbs() const
+{
+	return sqrt(CompPdata_MaxMat2(*this));  // no minimum necessary here
+}
+
+template<>
+Real ParticleDataImpl<Matrix2x2f>::getMax() const
+{
+	return sqrt(CompPdata_MaxMat2(*this));
+}
+template<>
+Real ParticleDataImpl<Matrix2x2f>::sumSquare() const
+{
+	return KnPtsSumSquareMat2(*this);
+}
+template<>
+Real ParticleDataImpl<Matrix2x2f>::sumMagnitude() const
+{
+	return KnPtsSumMagnitudeMat2(*this);
+}
 
 // explicit instantiation
 template class ParticleDataImpl<int>;
 template class ParticleDataImpl<Real>;
 template class ParticleDataImpl<Vec3>;
-
+template class ParticleDataImpl<Matrix3x3f>;
+template class ParticleDataImpl<Matrix2x2f>;
 
 } // namespace

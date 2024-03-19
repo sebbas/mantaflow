@@ -15,6 +15,7 @@
 #define _GRID_H
 
 #include "manta.h"
+#include "matrixbase.h"
 #include "vectorbase.h"
 #include "interpol.h"
 #include "interpolHigh.h"

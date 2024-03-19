@@ -20,6 +20,8 @@ true  = True
 Vec3  = vec3
 Vec4  = vec4
 Vec3Grid = VecGrid
+Matrix3x3 = mat3
+Matrix2x2 = mat2
 
 # grid flags
 FlagFluid    = 1

@@ -21,6 +21,7 @@
 #define alias typedef
 
 #include "general.h"
+#include "matrixbase.h"
 #include "vectorbase.h"
 #include "vector4d.h"
 #include "registry.h"

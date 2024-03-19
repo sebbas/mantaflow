@@ -250,7 +250,8 @@ void convertKeywords(vector<Token>& tokens) {
 				tokens[i].type = TkTypeQualifier;
 			else if (t == "char" || t == "int" || t == "short" || t == "long" ||
 					 t == "float" || t == "double" || t == "string" || t == "bool" ||
-					 t == "Vec3" || t == "Vec3i")
+					 t == "Vec3" || t == "Vec3i" || t == "Vec4" || t == "Vec4i" ||
+					 t == "Matrix3x3f" || t == "Matrix2x2f")
 				tokens[i].type = TkSimpleType;   
 			else if (t == "PYTHON" || t == "KERNEL")
 				tokens[i].type = TkManta;

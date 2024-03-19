@@ -26,6 +26,8 @@ namespace Manta {
 
 extern PyTypeObject PbVec3Type;
 extern PyTypeObject PbVec4Type;
+extern PyTypeObject PbMat2Type;
+extern PyTypeObject PbMat3Type;
 
 struct PbVec3 {
 	PyObject_HEAD
@@ -35,6 +37,16 @@ struct PbVec3 {
 struct PbVec4 {
 	PyObject_HEAD
 	float data[4];
+};
+
+struct PbMat2 {
+	PyObject_HEAD
+	float data[4];
+};
+
+struct PbMat3 {
+	PyObject_HEAD
+	float data[9];
 };
 
 PyObject* getPyNone() {
@@ -113,6 +125,17 @@ template<> PyObject* toPy<std::vector<float>>(const std::vector<float>& vec) {
 		PyList_SET_ITEM(listObj, i, item);
 	}
 	return listObj;
+}
+template<> PyObject* toPy<Matrix2x2f>(const Matrix2x2f& mat) {
+	float p00=(float)mat(0,0), p01=(float)mat(0,1);
+	float p10=(float)mat(1,0), p11=(float)mat(1,1);
+	return PyObject_CallFunction((PyObject*)&PbMat2Type, (char*)"ffff", p00, p01, p10, p11);
+}
+template<> PyObject* toPy<Matrix3x3f>(const Matrix3x3f& mat) {
+	float p00=(float)mat(0,0), p01=(float)mat(0,1), p02=(float)mat(0,2);
+	float p10=(float)mat(1,0), p11=(float)mat(1,1), p12=(float)mat(1,2);
+	float p20=(float)mat(2,0), p21=(float)mat(2,1), p22=(float)mat(2,2);
+	return PyObject_CallFunction((PyObject*)&PbMat3Type, (char*)"fffffffff", p00, p01, p02, p10, p11, p12, p20, p21, p22);
 }
 
 template<> float fromPy<float>(PyObject* obj) {
@@ -281,6 +304,37 @@ template<> PbTypeVec fromPy<PbTypeVec>(PyObject* obj) {
 		errMsg("argument is not a type tuple");
 	return vec;
 }
+template<> Matrix2x2f fromPy<Matrix2x2f>(PyObject* obj) {
+	if (PyObject_IsInstance(obj, (PyObject*)&PbMat2Type)) {
+		float *data = ((PbMat2*)obj)->data;
+		return Matrix2x2f(data[0], data[1], data[2], data[3]);
+	}
+	else if (PyTuple_Check(obj) && PyTuple_Size(obj) == 4) {
+		return Matrix2x2f(fromPy<Real>(PyTuple_GetItem(obj,0)),
+					fromPy<Real>(PyTuple_GetItem(obj,1)),
+					fromPy<Real>(PyTuple_GetItem(obj,2)),
+					fromPy<Real>(PyTuple_GetItem(obj,3)));
+	}
+	errMsg("argument is not a Matrix2x2");
+}
+template<> Matrix3x3f fromPy<Matrix3x3f>(PyObject* obj) {
+	if (PyObject_IsInstance(obj, (PyObject*)&PbMat3Type)) {
+		float *data = ((PbMat3*)obj)->data;
+		return Matrix3x3f(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
+	}
+	else if (PyTuple_Check(obj) && PyTuple_Size(obj) == 9) {
+		return Matrix3x3f(fromPy<Real>(PyTuple_GetItem(obj,0)),
+					fromPy<Real>(PyTuple_GetItem(obj,1)),
+					fromPy<Real>(PyTuple_GetItem(obj,2)),
+					fromPy<Real>(PyTuple_GetItem(obj,3)),
+					fromPy<Real>(PyTuple_GetItem(obj,4)),
+					fromPy<Real>(PyTuple_GetItem(obj,5)),
+					fromPy<Real>(PyTuple_GetItem(obj,6)),
+					fromPy<Real>(PyTuple_GetItem(obj,7)),
+					fromPy<Real>(PyTuple_GetItem(obj,8)));
+	}
+	errMsg("argument is not a Matrix3x3");
+}
 
 template<class T> T* tmpAlloc(PyObject* obj,std::vector<void*>* tmp) {
 	if (!tmp) throw Error("dynamic de-ref not supported for this type");
@@ -299,6 +353,8 @@ template<> Vec3i* fromPyPtr<Vec3i>(PyObject* obj, std::vector<void*>* tmp) { ret
 template<> Vec4* fromPyPtr<Vec4>(PyObject* obj, std::vector<void*>* tmp) { return tmpAlloc<Vec4>(obj,tmp); }
 template<> Vec4i* fromPyPtr<Vec4i>(PyObject* obj, std::vector<void*>* tmp) { return tmpAlloc<Vec4i>(obj,tmp); }
 template<> std::vector<PbClass*>* fromPyPtr<std::vector<PbClass *>>(PyObject *obj, std::vector<void *> *tmp) { return tmpAlloc<std::vector<PbClass *>>(obj, tmp); }
+template<> Matrix2x2f* fromPyPtr<Matrix2x2f>(PyObject* obj, std::vector<void*>* tmp) { return tmpAlloc<Matrix2x2f>(obj,tmp); }
+template<> Matrix3x3f* fromPyPtr<Matrix3x3f>(PyObject* obj, std::vector<void*>* tmp) { return tmpAlloc<Matrix3x3f>(obj,tmp); }
 
 template<> bool isPy<float>(PyObject* obj) {
 #if PY_MAJOR_VERSION <= 2
@@ -390,6 +446,31 @@ template<> bool isPy<std::vector<PbClass*>>(PyObject* obj) {
 }
 template<> bool isPy<std::vector<float>>(PyObject* obj) {
 	if (PyList_Check(obj)) return true;
+	return false;
+}
+template<> bool isPy<Matrix2x2f>(PyObject* obj) {
+	if (PyObject_IsInstance(obj, (PyObject*)&PbMat2Type)) return true;
+	if (PyTuple_Check(obj) && PyTuple_Size(obj) == 4) {
+		return isPy<Real>(PyTuple_GetItem(obj,0)) &&
+				isPy<Real>(PyTuple_GetItem(obj,1)) &&
+				isPy<Real>(PyTuple_GetItem(obj,2)) &&
+				isPy<Real>(PyTuple_GetItem(obj,3));
+	}
+	return false;
+}
+template<> bool isPy<Matrix3x3f>(PyObject* obj) {
+	if (PyObject_IsInstance(obj, (PyObject*)&PbMat3Type)) return true;
+	if (PyTuple_Check(obj) && PyTuple_Size(obj) == 9) {
+		return isPy<Real>(PyTuple_GetItem(obj,0)) &&
+				isPy<Real>(PyTuple_GetItem(obj,1)) &&
+				isPy<Real>(PyTuple_GetItem(obj,2)) &&
+				isPy<Real>(PyTuple_GetItem(obj,3)) &&
+				isPy<Real>(PyTuple_GetItem(obj,4)) &&
+				isPy<Real>(PyTuple_GetItem(obj,5)) &&
+				isPy<Real>(PyTuple_GetItem(obj,6)) &&
+				isPy<Real>(PyTuple_GetItem(obj,7)) &&
+				isPy<Real>(PyTuple_GetItem(obj,8));
+	}
 	return false;
 }
 

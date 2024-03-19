@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <matrixbase.h>
 
 namespace Manta { 
 template<class T> class Grid; 
@@ -59,6 +60,8 @@ template<> Vec4* fromPyPtr<Vec4>(PyObject* obj, std::vector<void*>* tmp);
 template<> Vec4i* fromPyPtr<Vec4i>(PyObject* obj, std::vector<void*>* tmp);
 template<> std::vector<PbClass*>* fromPyPtr<std::vector<PbClass*>>(PyObject* obj, std::vector<void*>* tmp);
 template<> std::vector<float>* fromPyPtr<std::vector<float>>(PyObject* obj, std::vector<void*>* tmp);
+template<> Matrix2x2f* fromPyPtr<Matrix2x2f>(PyObject* obj, std::vector<void*>* tmp);
+template<> Matrix3x3f* fromPyPtr<Matrix3x3f>(PyObject* obj, std::vector<void*>* tmp);
 
 PyObject* incref(PyObject* obj);
 template<class T> PyObject* toPy(const T& v) { 
@@ -99,6 +102,8 @@ template<> PbTypeVec fromPy<PbTypeVec>(PyObject* obj);
 template<> PbClass* fromPy<PbClass*>(PyObject *obj);
 template<> std::vector<PbClass*> fromPy<std::vector<PbClass*>>(PyObject *obj);
 template<> std::vector<float> fromPy<std::vector<float>>(PyObject *obj);
+template<> Matrix2x2f fromPy<Matrix2x2f>(PyObject *obj);
+template<> Matrix3x3f fromPy<Matrix3x3f>(PyObject *obj);
 
 template<> PyObject* toPy<int>( const int& v);
 template<> PyObject* toPy<std::string>( const std::string& val);
@@ -113,6 +118,8 @@ typedef PbClass* PbClass_Ptr;
 template<> PyObject* toPy<PbClass*>( const PbClass_Ptr & obj);
 template<> PyObject* toPy<std::vector<PbClass*>>( const std::vector<PbClass*>& vec);
 template<> PyObject* toPy<std::vector<float>>( const std::vector<float>& vec);
+template<> PyObject* toPy<Matrix2x2f>( const Matrix2x2f& mat);
+template<> PyObject* toPy<Matrix3x3f>( const Matrix3x3f& mat);
 
 template<> bool isPy<float>(PyObject* obj);
 template<> bool isPy<double>(PyObject* obj);
@@ -128,6 +135,8 @@ template<> bool isPy<Vec4i>(PyObject* obj);
 template<> bool isPy<PbType>(PyObject* obj);
 template<> bool isPy<std::vector<PbClass*>>(PyObject* obj);
 template<> bool isPy<std::vector<float>>(PyObject* obj);
+template<> bool isPy<Matrix2x2f>(PyObject* obj);
+template<> bool isPy<Matrix3x3f>(PyObject* obj);
 
 //! Encapsulation of python arguments
 class PbArgs {
