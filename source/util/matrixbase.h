@@ -556,20 +556,40 @@ template<> inline Matrix2x2f safeDivide<Matrix2x2f>(const Matrix2x2f &a, const M
 
 //! Perform polar decomposition with Eigen lib
 #if EIGEN==1
-template<typename T, typename EigenMat> void eigenPolarDecomp(const EigenMat &srcM, T* destR, T* destS) {
-	Eigen::JacobiSVD<EigenMat> svd(srcM, Eigen::ComputeFullU | Eigen::ComputeFullV);
-	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> UMat = svd.matrixU();
-	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> VMat = svd.matrixV();
+// Explicit 3x3 polar decomposition with Eigen (using Eigen::Dynamic to construct matrices is kind of slow ..)
+template<typename T> void eigenPolarDecomp3x3(const Eigen::Matrix3f& srcM, T* destR, T* destS) {
+	Eigen::JacobiSVD<Eigen::Matrix3f> svd(srcM, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Matrix<Real, 3, 3, Eigen::RowMajor> UMat = svd.matrixU();
+	Eigen::Matrix<Real, 3, 3, Eigen::RowMajor> VMat = svd.matrixV();
 	auto singularValues = svd.singularValues();
 
 	// Polar decomposition A=RS with SVD matrices: S=V*Sigma*V^T, R=U*V^T
-	EigenMat SigMat = EigenMat::Zero(srcM.rows(), srcM.cols());
+	Eigen::Matrix3f SigMat = Eigen::Matrix3f::Zero();
 	SigMat.diagonal() = singularValues;
-	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> SMat = VMat * SigMat * VMat.transpose();
-	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RMat = UMat * VMat.transpose();;
+	Eigen::Matrix<Real, 3, 3, Eigen::RowMajor> SMat = VMat * SigMat * VMat.transpose();
+	Eigen::Matrix<Real, 3, 3, Eigen::RowMajor> RMat = UMat * VMat.transpose();
 
 	// Copy eigenlib matrices into manta matrices
-	const float* SPtr = SMat.data(), *RPtr = RMat.data();
+	const Real* SPtr = SMat.data(), *RPtr = RMat.data();
+	std::copy(SPtr, SPtr + SMat.size(), destS);
+	std::copy(RPtr, RPtr + RMat.size(), destR);
+}
+
+// Explicit 2x2 polar decomposition with Eigen (using Eigen::Dynamic to construct matrices is kind of slow ..)
+template<typename T> void eigenPolarDecomp2x2(const Eigen::Matrix2f& srcM, T* destR, T* destS) {
+	Eigen::JacobiSVD<Eigen::Matrix2f> svd(srcM, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Matrix<Real, 2, 2, Eigen::RowMajor> UMat = svd.matrixU();
+	Eigen::Matrix<Real, 2, 2, Eigen::RowMajor> VMat = svd.matrixV();
+	auto singularValues = svd.singularValues();
+
+	// Polar decomposition A=RS with SVD matrices: S=V*Sigma*V^T, R=U*V^T
+	Eigen::Matrix2f SigMat = Eigen::Matrix2f::Zero();
+	SigMat.diagonal() = singularValues;
+	Eigen::Matrix<Real, 2, 2, Eigen::RowMajor> SMat = VMat * SigMat * VMat.transpose();
+	Eigen::Matrix<Real, 2, 2, Eigen::RowMajor> RMat = UMat * VMat.transpose();
+
+	// Copy eigenlib matrices into manta matrices
+	const Real* SPtr = SMat.data(), *RPtr = RMat.data();
 	std::copy(SPtr, SPtr + SMat.size(), destS);
 	std::copy(RPtr, RPtr + RMat.size(), destR);
 }
@@ -591,18 +611,19 @@ template<typename T> inline void inlinePolarDecomp(const Matrix2x2<T>& m, Matrix
 template<typename T> void polarDecomposition(const Matrix3x3<T>& m, Matrix3x3<T>& R, Matrix3x3<T>& S) {
 #if EIGEN==1
 	const Eigen::Matrix3f M { {m(0,0), m(0,1), m(0,2)}, {m(1,0), m(1,1), m(1,2)}, {m(2,0), m(2,1), m(2,2)} };
-	eigenPolarDecomp(M, R.data(), S.data());
+	eigenPolarDecomp3x3(M, R.data(), S.data());
 #else
 	debMsg("Cannot compute polar decomposition without Eigen lib", 1);
 #endif
 }
+
 template<typename T> void polarDecomposition(const Matrix2x2<T>& m, Matrix2x2<T>& R, Matrix2x2<T>& S, bool usingEigen=false) {
 	if (usingEigen) {
 #if EIGEN==1
 		const Eigen::Matrix2f M { {m(0,0), m(0,1)}, {m(1,0), m(1,1)} };
-		eigenPolarDecomp(M, R.data(), S.data());
+		eigenPolarDecomp2x2(M, R.data(), S.data());
 #else
-		debMsg("Cannot compute polar decomposition without Eigen lib", 1);
+		debMsg("Cannot compute polar decomposition without Eigen lib. But can do with usingEigen=false", 1);
 #endif
 	} else {
 		inlinePolarDecomp(m, R, S);
@@ -611,22 +632,42 @@ template<typename T> void polarDecomposition(const Matrix2x2<T>& m, Matrix2x2<T>
 
 //! Perform SVD with Eigen lib
 #if EIGEN==1
-template<typename T, typename EigenMat> void eigenSVD(const EigenMat &srcM, T* destU, T* destSig, T* destV) {
-	Eigen::JacobiSVD<EigenMat> svd(srcM, Eigen::ComputeFullU | Eigen::ComputeFullV);
+// Explicit 3x3 SVD with Eigen (using Eigen::Dynamic to construct matrices is kind of slow ..)
+template<typename T> void eigenSVD3x3(const Eigen::Matrix3f &srcM, T* destU, T* destSig, T* destV) {
+	Eigen::JacobiSVD<Eigen::Matrix3f> svd(srcM, Eigen::ComputeFullU | Eigen::ComputeFullV);
 	// Use row-major in Eigen (column-major is default), as it must match manta matrix layout
-	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> UMat = svd.matrixU();
-	Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> VMat = svd.matrixV();
+	Eigen::Matrix<Real, 3, 3, Eigen::RowMajor> UMat = svd.matrixU();
+	Eigen::Matrix<Real, 3, 3, Eigen::RowMajor> VMat = svd.matrixV();
 	auto singularValues = svd.singularValues();
 
 	// Copy eigenlib matrices into manta matrices
-	const float* UPtr = UMat.data(), *VPtr = VMat.data();
+	const Real* UPtr = UMat.data(), *VPtr = VMat.data();
 	std::copy(UPtr, UPtr + UMat.size(), destU);
 	std::copy(VPtr, VPtr + VMat.size(), destV);
 	// Copy eigenlib singular values into manta matrix
-	EigenMat SigMat = EigenMat::Zero(srcM.rows(), srcM.cols());
+	Eigen::Matrix3f SigMat = Eigen::Matrix3f::Zero();
 	SigMat.diagonal() = singularValues;
-	const float* SingPtr = SigMat.data();
-	std::copy(SingPtr, SingPtr + SigMat.size(), destSig);	
+	const Real* SigPtr = SigMat.data();
+	std::copy(SigPtr, SigPtr + SigMat.size(), destSig);
+}
+
+// Explicit 2x2 SVD with Eigen (using Eigen::Dynamic to construct matrices is kind of slow ..)
+template<typename T> void eigenSVD2x2(const Eigen::Matrix2f &srcM, T* destU, T* destSig, T* destV) {
+	Eigen::JacobiSVD<Eigen::Matrix2f> svd(srcM, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	// Use row-major in Eigen (column-major is default), as it must match manta matrix layout
+	Eigen::Matrix<Real, 2, 2, Eigen::RowMajor> UMat = svd.matrixU();
+	Eigen::Matrix<Real, 2, 2, Eigen::RowMajor> VMat = svd.matrixV();
+	auto singularValues = svd.singularValues();
+
+	// Copy eigenlib matrices into manta matrices
+	const Real* UPtr = UMat.data(), *VPtr = VMat.data();
+	std::copy(UPtr, UPtr + UMat.size(), destU);
+	std::copy(VPtr, VPtr + VMat.size(), destV);
+	// Copy eigenlib singular values into manta matrix
+	Eigen::Matrix2f SigMat = Eigen::Matrix2f::Zero();
+	SigMat.diagonal() = singularValues;
+	const Real* SigPtr = SigMat.data();
+	std::copy(SigPtr, SigPtr + SigMat.size(), destSig);
 }
 #endif
 
@@ -667,18 +708,19 @@ template<typename T> inline void inlineSVD(const Matrix2x2<T>& srcM, Matrix2x2<T
 template<typename T> void svd(const Matrix3x3<T>& m, Matrix3x3<T>& U, Matrix3x3<T>& sig, Matrix3x3<T>& V) {
 #if EIGEN==1
 	const Eigen::Matrix3f M { {m(0,0), m(0,1), m(0,2)}, {m(1,0), m(1,1), m(1,2)}, {m(2,0), m(2,1), m(2,2)} };
-	eigenSVD(M, U.data(), sig.data(), V.data());
+	eigenSVD3x3(M, U.data(), sig.data(), V.data());
 #else
 	debMsg("Cannot compute SVD without Eigen lib", 1);
 #endif
 }
+
 template<typename T> void svd(const Matrix2x2<T>& m, Matrix2x2<T>& U, Matrix2x2<T>& sig, Matrix2x2<T>& V, bool usingEigen=false) {
 	if (usingEigen) {
 #if EIGEN==1
 		const Eigen::Matrix2f M { {m(0,0), m(0,1)}, {m(1,0), m(1,1)} };
-		eigenSVD(M, U.data(), sig.data(), V.data());
+		eigenSVD2x2(M, U.data(), sig.data(), V.data());
 #else
-		debMsg("Cannot compute SVD without Eigen lib", 1);
+		debMsg("Cannot compute SVD without Eigen lib. But can do with usingEigen=false", 1);
 #endif
 	} else {
 		inlineSVD(m, U, sig, V);
