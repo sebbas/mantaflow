@@ -2,6 +2,7 @@
 # MLS-MPM scene with obstacle
 #
 from manta import *
+import time
 
 # solver params
 dim = 2
@@ -9,6 +10,8 @@ particleNumber = 2
 res = 200
 withMesh = 1
 withObs = 1
+withPseudo3D = 0 # simulate with 3D grids but 2D MPM functions
+
 gs = vec3(res,res,res/4)
 if (dim==2):
 	gs.z=1
@@ -37,18 +40,65 @@ plastic   = bool(1) # plastic=0 behave more like soft body
 flags    = s.create(FlagGrid)
 tmpVec3  = s.create(VecGrid)
 vel      = s.create(MACGrid)
+mesh     = s.create(Mesh)
 pp       = s.create(BasicParticleSystem)
-pp.maxParticles = int(5e3) if dim == 2 else int(5e4) # 2D still runs in realtime on notebook
+pp.maxParticles = int(5e3) if (dim == 2) else int(1e5) # 2D still runs in realtime on notebook
 # add velocity data to particles
 pVel     = pp.create(PdataVec3)
 # mpm part
 dummy    = s.create(RealGrid) # just for nicer grid view in GUI
 mass     = s.create(RealGrid)
-mesh     = s.create(Mesh)
+
+# acceleration grids for 3D "parts-to-grid" mapping, only use when using lots of particles
+numKernels = 3 # choose from 1 (no parallelization), 3 (parallel k) or 9 (parallel j and k)
+assert numKernels == 1 or numKernels == 3 or numKernels == 9, "Invalid number of kernels"
+
+# placeholders for acceleration grids
+kernelGrid = None
+velI01  = None
+velI02  = None
+velI10  = None
+velI11  = None
+velI12  = None
+velI20  = None
+velI21  = None
+velI22  = None
+massI01 = None
+massI02 = None
+massI10 = None
+massI11 = None
+massI12 = None
+massI20 = None
+massI21 = None
+massI22 = None
+
+if dim == 3 and (numKernels == 3 or numKernels == 9):
+	gsKernel       = vec3(1,1,3) if numKernels == 3 else vec3(1,3,3)
+	sAcc           = Solver(name='kernelHelper', gridSize=gsKernel, dim=dim)
+	sAcc.updateGui = False
+	kernelGrid     = sAcc.create(RealGrid)
+	velI01  = s.create(MACGrid)  # k=1
+	velI02  = s.create(MACGrid)  # k=2
+	massI01 = s.create(RealGrid) # k=1
+	massI02 = s.create(RealGrid) # k=2
+	if numKernels == 9:
+		velI10  = s.create(MACGrid)  # j=1, k=0
+		velI11  = s.create(MACGrid)  # j=1, k=1
+		velI12  = s.create(MACGrid)  # j=1, k=2
+		velI20  = s.create(MACGrid)  # j=2, k=0
+		velI21  = s.create(MACGrid)  # j=2, k=1
+		velI22  = s.create(MACGrid)  # j=2, k=2
+		massI10 = s.create(RealGrid) # j=1, k=0
+		massI11 = s.create(RealGrid) # j=1, k=1
+		massI12 = s.create(RealGrid) # j=1, k=2
+		massI20 = s.create(RealGrid) # j=2, k=0
+		massI21 = s.create(RealGrid) # j=2, k=1
+		massI22 = s.create(RealGrid) # j=2, k=2
 
 # acceleration data for particle nbs
 pindex   = s.create(ParticleIndexSystem)
 gpi      = s.create(IntGrid)
+counter  = s.create(IntGrid)
 phiParts = s.create(LevelsetGrid)
 
 # obstacle
@@ -60,10 +110,10 @@ phiObs   = s.create(LevelsetGrid)
 Jp = pp.create(PdataReal)
 
 # matrix data structures per particle
-F = pp.create(PdataMat2) if dim==2 else pp.create(PdataMat3) # deformation grad
-C = pp.create(PdataMat2) if dim==2 else pp.create(PdataMat3) # affine momentum
-R = pp.create(PdataMat2) if dim==2 else pp.create(PdataMat3) # rotation mat from F=RS
-S = pp.create(PdataMat2) if dim==2 else pp.create(PdataMat3) # scale mat from F=RS
+F = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3) # deformation grad
+C = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3) # affine momentum
+R = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3) # rotation mat from F=RS
+S = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3) # scale mat from F=RS
 
 flags.initDomain(boundaryWidth=0, phiWalls=phiObs)
 
@@ -85,8 +135,8 @@ setObstacleFlags(flags=flags, phiObs=phiObs)
 # Initialize particle data structures (after sampling particles!)
 Jp.setConst(1.0) # initialize with 0.0 for more rigidity
 if not plastic: Jp.setConst(1.0)
-identity = mat2() if dim==2 else mat3()
-zeros = mat2(0) if dim == 2 else mat3(0)
+identity = mat2() if (dim == 2 or withPseudo3D) else mat3()
+zeros = mat2(0) if (dim == 2 or withPseudo3D) else mat3(0)
 F.setConst(identity)
 C.setConst(zeros)
 R.setConst(zeros)
@@ -98,25 +148,30 @@ if (GUI):
 	gui.pause()
 
 # main loop
-for t in range(int(1e5)):
+startTime = time.time()
+runtime = int(1e5) if (dim == 2 or withPseudo3D) else int(5e2)
+
+for t in range(runtime):
 	#mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
-	if (dim==2):
+	if (dim == 2 or withPseudo3D):
 		polarDecomposition2D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid2D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, rotation=R, scale=S, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
+		mpmMapPartsToMACGrid2D(vel=vel, mass=mass, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, rotation=R, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 	else:
 		polarDecomposition3D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid3D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, rotation=R, scale=S, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
+		mpmMapPartsToMACGrid3D(pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, rotation=R, kernelGrid=kernelGrid,
+								velI00=vel, velI01=velI01, velI02=velI02, velI10=velI10, velI11=velI11, velI12=velI12, velI20=velI20, velI21=velI21, velI22=velI22,
+								massI00=mass, massI01=massI01, massI02=massI02, massI10=massI10, massI11=massI11, massI12=massI12, massI20=massI20, massI21=massI21, massI22=massI22,
+								hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 
 	markFluidCells(parts=pp, flags=flags)
 	mpmUpdateGrid(flags=flags, pp=pp, vel=vel, mass=mass, gravity=gravity)
 	
-	if (dim==2):
+	if (dim == 2 or withPseudo3D):
 		mpmMapMACGridToParts2D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
 	else:
 		mpmMapMACGridToParts3D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
 
-	timings.display()
 	s.step()
 
 	# Gui uses larger timestep
@@ -124,8 +179,12 @@ for t in range(int(1e5)):
 		if 0:
 			gui.screenshot('test_%02d_imgs/test_00_%04d.png' % (int(test), t));
 		if withMesh and dim==3 and t>2000:
-			gridParticleIndex(parts=pp , flags=flags, indexSys=pindex, index=gpi)
+			gridParticleIndex(parts=pp , flags=flags, indexSys=pindex, index=gpi, counter=counter)
 			#unionParticleLevelset(pp, pindex, flags, gpi, phiParts)
 			improvedParticleLevelset(pp, pindex, flags, gpi, phiParts , 1 , 1, 1)
 			phiParts.createMesh(mesh)
 		sGui.step()
+
+	timings.display()
+
+print('Time taken : %s seconds ---' % (time.time() - startTime))

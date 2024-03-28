@@ -54,6 +54,12 @@ public:
 	//! Check if indices are within bounds, otherwise error (should only be called when debugging)
 	inline void checkIndex(IndexInt idx) const;
 	//! Check if index is within given boundaries
+	inline bool isInBoundsX(const Real) const;
+	//! Check if index is within given boundaries
+	inline bool isInBoundsY(const Real p) const;
+	//! Check if index is within given boundaries
+	inline bool isInBoundsZ(const Real p) const;
+	//! Check if index is within given boundaries
 	inline bool isInBounds(const Vec3i& p, int bnd) const;
 	//! Check if index is within given boundaries
 	inline bool isInBounds(const Vec3i& p) const;
@@ -173,7 +179,9 @@ public:
 
 	//! add/subtract other grid
 	PYTHON() void add(const Grid<T>& a);
+	PYTHON() void add2(const Grid<T>& a, const Grid<T>& b);
 	PYTHON() void sub(const Grid<T>& a);
+	PYTHON() void sub2(const Grid<T>& a, const Grid<T>& b);
 	//! set all cells to constant value
 	PYTHON() void setConst(T s);
 	//! add constant to all grid cells
@@ -409,11 +417,23 @@ inline void GridBase::checkIndex(IndexInt idx) const {
 	}
 }
 
-bool GridBase::isInBounds(const Vec3i& p) const { 
+inline bool GridBase::isInBoundsX(const Real p) const {
+	return (p >= 0 && p < mSize.x);
+}
+
+inline bool GridBase::isInBoundsY(const Real p) const {
+	return (p >= 0 && p < mSize.y);
+}
+
+inline bool GridBase::isInBoundsZ(const Real p) const {
+	return (p >= 0 && p < mSize.z);
+}
+
+inline bool GridBase::isInBounds(const Vec3i& p) const {
 	return (p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < mSize.x && p.y < mSize.y && p.z < mSize.z); 
 }
 
-bool GridBase::isInBounds(const Vec3i& p, int bnd) const { 
+inline bool GridBase::isInBounds(const Vec3i& p, int bnd) const {
 	bool ret = (p.x >= bnd && p.y >= bnd && p.x < mSize.x-bnd && p.y < mSize.y-bnd);
 	if(this->is3D()) {
 		ret &= (p.z >= bnd && p.z < mSize.z-bnd); 
@@ -479,13 +499,14 @@ inline Vec3 MACGrid::getAtMACZ(int i, int j, int k) const {
 }
 
 KERNEL(idx) template<class T, class S> void gridAdd  (Grid<T>& me, const Grid<S>& other) { me[idx] += other[idx]; }
+KERNEL(idx) template<class T, class S> void gridAdd2 (Grid<T>& me, const Grid<S>& other, const Grid<S>& other2) { me[idx] += other[idx] + other2[idx]; }
 KERNEL(idx) template<class T, class S> void gridSub  (Grid<T>& me, const Grid<S>& other) { me[idx] -= other[idx]; }
+KERNEL(idx) template<class T, class S> void gridSub2 (Grid<T>& me, const Grid<S>& other, const Grid<S>& other2) { me[idx] -= (other[idx] + other2[idx]); }
 KERNEL(idx) template<class T, class S> void gridMult (Grid<T>& me, const Grid<S>& other) { me[idx] *= other[idx]; }
 KERNEL(idx) template<class T, class S> void gridDiv  (Grid<T>& me, const Grid<S>& other) { me[idx] /= other[idx]; }
 KERNEL(idx) template<class T, class S> void gridAddScalar (Grid<T>& me, const S& other)  { me[idx] += other; }
 KERNEL(idx) template<class T, class S> void gridMultScalar(Grid<T>& me, const S& other)  { me[idx] *= other; }
 KERNEL(idx) template<class T, class S> void gridScaledAdd (Grid<T>& me, const Grid<T>& other, const S& factor) { me[idx] += factor * other[idx]; }
-
 KERNEL(idx) template<class T> void gridSetConst(Grid<T>& grid, T value) { grid[idx] = value; }
 
 template<class T> template<class S> Grid<T>& Grid<T>::operator+= (const Grid<S>& a) {
