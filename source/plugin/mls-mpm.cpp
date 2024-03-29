@@ -126,13 +126,18 @@ void knMpmMapVec3ToMACGrid(
 	IndexInt targetPos;
 	Real weight;
 
-	for (int k = loopStart.z; k < sizeK; k++)// && vel.isInBoundsZ(base.z + k); k++)
-	for (int j = loopStart.y; j < sizeJ; j++)// && vel.isInBoundsY(base.y + j); j++)
-	for (int i = loopStart.x; i < sizeI; i++)// && vel.isInBoundsX(base.x + i); i++)
-	{
-		targetPos = vel.index(base + toVec3i(i,j,k));
-		if (!vel.isInBounds(targetPos)) continue; // TODO: this call is relatively slow ...
+	// Check if current and outermost cell is in bounds (knowledge saves time in neighbor loop)
+	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
+	bool thisInBounds = vel.isInBounds(base);
 
+	for (int k = loopStart.z; k < sizeK; k++)
+	for (int j = loopStart.y; j < sizeJ; j++)
+	for (int i = loopStart.x; i < sizeI; i++)
+	{
+		// Only perform bounds check for current ijk if this or upper bound cell are not in bounds (saves time)
+		if ((!upperInBounds || !thisInBounds) && !vel.isInBounds(base + toVec3i(i,j,k))) continue;
+
+		targetPos = vel.index(base + toVec3i(i,j,k));
 		dpos = (Vec3(i,j,k) - fx) * dx;
 		if (!is3D) dpos.z = 0;
 
@@ -326,13 +331,18 @@ void knMpmMapMACGridToVec3(
 	IndexInt targetPos;
 	Real weight;
 
-	for (int k = loopStart.z; k < sizeK; k++)// && vel.isInBoundsX(base.z + k); k++)
-	for (int j = loopStart.y; j < sizeJ; j++)// && vel.isInBoundsY(base.y + j); j++)
-	for (int i = loopStart.x; i < sizeI; i++)// && vel.isInBoundsX(base.x + i); i++)
-	{
-		targetPos = vel.index(base + toVec3i(i,j,k));
-		if (!vel.isInBounds(targetPos)) continue; // TODO: this call is relatively slow ...
+	// Check if current and outermost cell is in bounds (knowledge saves time in neighbor loop)
+	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
+	bool thisInBounds = vel.isInBounds(base);
 
+	for (int k = loopStart.z; k < sizeK; k++)
+	for (int j = loopStart.y; j < sizeJ; j++)
+	for (int i = loopStart.x; i < sizeI; i++)
+	{
+		// Only perform bounds check for current ijk if this or upper bound cell are not in bounds
+		if ((!upperInBounds || !thisInBounds) && !vel.isInBounds(base + toVec3i(i,j,k))) continue;
+
+		targetPos = vel.index(base + toVec3i(i,j,k));
 		dpos = (Vec3(i,j,k) - fx);
 		if (!is3D) dpos.z = 0;
 
