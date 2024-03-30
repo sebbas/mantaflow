@@ -51,18 +51,18 @@ namespace Manta {
 
 //! Polar decomposition A=UP
 KERNEL(pts, bnd=0) template<class T>
-void knMpmPolarDecomposition(ParticleDataImpl<T>& srcA, ParticleDataImpl<T>& destU, ParticleDataImpl<T>& destP)
+void knMpmPolarDecomposition(const ParticleDataImpl<T>& srcA, ParticleDataImpl<T>& destU, ParticleDataImpl<T>& destP)
 {
 	polarDecomposition(srcA[idx], destU[idx], destP[idx]);
 }
 
-PYTHON() void polarDecomposition2D(ParticleDataImpl<Matrix2x2f>& A,
+PYTHON() void polarDecomposition2D(const ParticleDataImpl<Matrix2x2f>& A,
 	ParticleDataImpl<Matrix2x2f>& U, ParticleDataImpl<Matrix2x2f>& P)
 {
 	knMpmPolarDecomposition<Matrix2x2f>(A, U, P);
 }
 
-PYTHON() void polarDecomposition3D(ParticleDataImpl<Matrix3x3f>& A,
+PYTHON() void polarDecomposition3D(const ParticleDataImpl<Matrix3x3f>& A,
 	ParticleDataImpl<Matrix3x3f>& U, ParticleDataImpl<Matrix3x3f>& P)
 {
 	knMpmPolarDecomposition<Matrix3x3f>(A, U, P);
