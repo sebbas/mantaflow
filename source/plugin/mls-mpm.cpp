@@ -77,7 +77,7 @@ void knMpmMapVec3ToMACGrid(
 {
 	// Initial Lame parameters
 	const Real mu_0 = E / (2 * (1 + nu));
-	const Real lambda_0 = E * nu / ((1+nu) * (1 - 2 * nu));
+	const Real lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
 
 	// Lame parameters, MPM course Equation 86.
 	const Real e = std::exp(hardening * (1.0f - detDeformationGrad[idx]));
@@ -100,6 +100,12 @@ void knMpmMapVec3ToMACGrid(
 		Vec3(0.75) - square(fx - Vec3(1.0)), // x = fx - 1
 		Vec3(0.5)  * square(fx - Vec3(0.5))  // x = fx - 2
 	};
+	// In 2D the Z component is unused
+	if (!is3D) {
+		w[0].z = 1.;
+		w[1].z = 1.;
+		w[2].z = 1.;
+	}
 
 	// Current volume
 	const Real J = deformationGrad[idx].determinant();
@@ -122,9 +128,13 @@ void knMpmMapVec3ToMACGrid(
 	if (loopStart.y == -1) { sizeJ = sizeFull; loopStart.y = 0; }
 	if (loopStart.z == -1) { sizeK = sizeFull; loopStart.z = 0; }
 
-	Vec3 dpos, vel_x_mass, aff;
+	Vec3 dpos, aff;
 	IndexInt targetPos;
 	Real weight;
+
+	const Vec3 vel_x_mass = pvel[idx] * pmass;
+	// Factor to zero out the last dim in 2D mode
+	const Vec3 dimFactor = (is3D) ? Vec3(1) : Vec3(1,1,0);
 
 	// Check if current and outermost cell is in bounds (knowledge saves time in neighbor loop)
 	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
@@ -139,19 +149,12 @@ void knMpmMapVec3ToMACGrid(
 
 		targetPos = vel.index(base + toVec3i(i,j,k));
 		dpos = (Vec3(i,j,k) - fx) * dx;
-		if (!is3D) dpos.z = 0;
-
-		vel_x_mass = pvel[idx] * pmass;
-		if (!is3D) vel_x_mass.z = 0;
 
 		aff = affine * dpos;
-		if (!is3D) aff.z = 0;
-
-		weight = w[i].x * w[j].y;
-		if (is3D) weight *= w[k].z;
+		weight = w[i].x * w[j].y * w[k].z;
 
 		// Grid write operations are most expensive
-		vel(targetPos) += weight * (vel_x_mass + aff);
+		vel(targetPos) += weight * (vel_x_mass + aff) * dimFactor;
 		mass(targetPos) += weight * pmass;
 	}
 }
@@ -267,24 +270,26 @@ PYTHON() void mpmMapPartsToMACGrid3D(
 }
 
 KERNEL(bnd=0)
-void KnMpmUpdateGrid(const FlagGrid& flags, const BasicParticleSystem& pp, MACGrid& vel, Grid<Real>& mass, const Vec3 gravity)
+void KnMpmUpdateGrid(const FlagGrid& flags, const BasicParticleSystem& pp, MACGrid& vel, Grid<Real>& mass, const Vec3& gravity)
 {
 	if (mass(i,j,k) <= 0) return;
-	const Real dt = pp.getParent()->getDt();
-
-	// Normalize by mass
-	vel(i,j,k) /= mass(i,j,k);
-	mass(i,j,k) /= mass(i,j,k);
-	vel(i,j,k) += dt * gravity;
 
 	// Assume solid no-slip boundaries at all walls
 	if (flags.isObstacle(i,j,k)) {
 		vel(i,j,k) = Vec3(0.);
 		mass(i,j,k) = 0.;
+		return;
 	}
+
+	// Normalize by mass
+	vel(i,j,k) /= mass(i,j,k);
+	mass(i,j,k) /= mass(i,j,k);
+
+	const Real dt = pp.getParent()->getDt();
+	vel(i,j,k) += dt * gravity;
 }
 
-PYTHON() void mpmUpdateGrid(const FlagGrid& flags, const BasicParticleSystem& pp, MACGrid& vel, Grid<Real>& mass, const Vec3 gravity)
+PYTHON() void mpmUpdateGrid(const FlagGrid& flags, const BasicParticleSystem& pp, MACGrid& vel, Grid<Real>& mass, const Vec3& gravity)
 {
 	KnMpmUpdateGrid(flags, pp, vel, mass, gravity);
 }
@@ -310,6 +315,12 @@ void knMpmMapMACGridToVec3(
 		Vec3(0.75) - square(fx - Vec3(1.0)), // x = fx - 1
 		Vec3(0.5)  * square(fx - Vec3(0.5))  // x = fx - 2
 	};
+	// In 2D the Z component is unused
+	if (!is3D) {
+		w[0].z = 1.;
+		w[1].z = 1.;
+		w[2].z = 1.;
+	}
 
 	affineMomentum[idx] = T(Vec3(0.));
 	pvel[idx] = Vec3(0.);
@@ -331,6 +342,9 @@ void knMpmMapMACGridToVec3(
 	IndexInt targetPos;
 	Real weight;
 
+	// Factor to zero out the last dim in 2D mode
+	const Vec3 dimFactor = (is3D) ? Vec3(1) : Vec3(1,1,0);
+
 	// Check if current and outermost cell is in bounds (knowledge saves time in neighbor loop)
 	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
 	bool thisInBounds = vel.isInBounds(base);
@@ -344,18 +358,12 @@ void knMpmMapMACGridToVec3(
 
 		targetPos = vel.index(base + toVec3i(i,j,k));
 		dpos = (Vec3(i,j,k) - fx);
-		if (!is3D) dpos.z = 0;
 
-		gridVel = vel(targetPos);
-		if (!is3D) gridVel.z = 0;
-
-		weight = w[i].x * w[j].y;
-		if (is3D) weight *= w[k].z;
-
+		gridVel = vel(targetPos) * dimFactor;
+		weight = w[i].x * w[j].y * w[k].z;
 		pvel[idx] += weight * gridVel;
-		if (!is3D) pvel[idx].z = 0;
 
-		outerProduct(outerProd, weight * gridVel, dpos);
+		outerProduct(outerProd, weight * gridVel, dpos * dimFactor);
 		affineMomentum[idx] += 4 * outerProd;
 	}
 
