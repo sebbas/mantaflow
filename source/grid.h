@@ -21,6 +21,8 @@
 #include "interpolHigh.h"
 #include "kernel.h"
 
+#include <initializer_list>
+
 namespace Manta {
 class LevelsetGrid;
 
@@ -179,9 +181,9 @@ public:
 
 	//! add/subtract other grid
 	PYTHON() void add(const Grid<T>& a);
-	PYTHON() void add2(const Grid<T>& a, const Grid<T>& b);
+	PYTHON() void add(std::initializer_list<Grid<T> *> grids);
 	PYTHON() void sub(const Grid<T>& a);
-	PYTHON() void sub2(const Grid<T>& a, const Grid<T>& b);
+	PYTHON() void sub(std::initializer_list<Grid<T> *> grids);
 	//! set all cells to constant value
 	PYTHON() void setConst(T s);
 	//! add constant to all grid cells
@@ -499,9 +501,17 @@ inline Vec3 MACGrid::getAtMACZ(int i, int j, int k) const {
 }
 
 KERNEL(idx) template<class T, class S> void gridAdd  (Grid<T>& me, const Grid<S>& other) { me[idx] += other[idx]; }
-KERNEL(idx) template<class T, class S> void gridAdd2 (Grid<T>& me, const Grid<S>& other, const Grid<S>& other2) { me[idx] += other[idx] + other2[idx]; }
+KERNEL(idx) template<class T, class S> void gridAddN (Grid<T>& me, std::initializer_list<Grid<T> *> gridPointers) {
+	for (Grid<T>* pointer : gridPointers) {
+		if (pointer != nullptr) me[idx] += (*pointer)[idx];
+	}
+}
 KERNEL(idx) template<class T, class S> void gridSub  (Grid<T>& me, const Grid<S>& other) { me[idx] -= other[idx]; }
-KERNEL(idx) template<class T, class S> void gridSub2 (Grid<T>& me, const Grid<S>& other, const Grid<S>& other2) { me[idx] -= (other[idx] + other2[idx]); }
+KERNEL(idx) template<class T, class S> void gridSubN (Grid<T>& me, std::initializer_list<Grid<T> *> gridPointers) {
+	for (Grid<T>* pointer : gridPointers) {
+		if (pointer != nullptr) me[idx] -= (*pointer)[idx];
+	}
+}
 KERNEL(idx) template<class T, class S> void gridMult (Grid<T>& me, const Grid<S>& other) { me[idx] *= other[idx]; }
 KERNEL(idx) template<class T, class S> void gridDiv  (Grid<T>& me, const Grid<S>& other) { me[idx] /= other[idx]; }
 KERNEL(idx) template<class T, class S> void gridAddScalar (Grid<T>& me, const S& other)  { me[idx] += other; }

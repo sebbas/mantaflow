@@ -258,15 +258,13 @@ PYTHON() void mpmMapPartsToMACGrid3D(
 		pvel, detDeformationGrad, deformationGrad, affineMomentum, rotation, hardening, E, nu, pmass, pvol);
 
 	// // Get the sum of all slices that were computed in parallel
-	if (velI00 && velI01 && velI02) velI00->add2(*velI01, *velI02);
-	if (velI10 && velI11 && velI12) velI10->add2(*velI11, *velI12);
-	if (velI20 && velI21 && velI22) velI20->add2(*velI21, *velI22);
-	if (velI00 && velI10 && velI20) velI00->add2(*velI10, *velI20);
-
-	if (massI00 && massI01 && massI02) massI00->add2(*massI01, *massI02);
-	if (massI10 && massI11 && massI12) massI10->add2(*massI11, *massI12);
-	if (massI20 && massI21 && massI22) massI20->add2(*massI21, *massI22);
-	if (massI00 && massI10 && massI20) massI00->add2(*massI10, *massI20);
+	if (velI10 == nullptr) { // KernelHelper with parallel k
+		velI00->add({velI01, velI02});
+		massI00->add({massI01, massI02});
+	} else { // KernelHelper with parallel j and k
+		velI00->add({velI01, velI02, velI10, velI11, velI12, velI20, velI21, velI22});
+		massI00->add({massI01, massI02, massI10, massI11, massI12, massI20, massI21, massI22});
+	}
 }
 
 KERNEL(bnd=0)

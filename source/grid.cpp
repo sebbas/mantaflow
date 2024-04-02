@@ -256,14 +256,14 @@ template<class T> int Grid<T>::getGridType() {
 template<class T> void Grid<T>::add(const Grid<T>& a) {
 	gridAdd<T,T>(*this, a);
 }
-template<class T> void Grid<T>::add2(const Grid<T>& a, const Grid<T>& b) {
-	gridAdd2<T,T>(*this, a, b);
+template<class T> void Grid<T>::add(std::initializer_list<Grid<T> *> grids) {
+	gridAddN<T,T>(*this, grids);
 }
 template<class T> void Grid<T>::sub(const Grid<T>& a) {
 	gridSub<T,T>(*this, a);
 }
-template<class T> void Grid<T>::sub2(const Grid<T>& a, const Grid<T>& b) {
-	gridSub2<T,T>(*this, a, b);
+template<class T> void Grid<T>::sub(std::initializer_list<Grid<T> *> grids) {
+	gridSubN<T,T>(*this, grids);
 }
 template<class T> void Grid<T>::addScaled(const Grid<T>& a, const T& factor) { 
 	gridScaledAdd<T,T> (*this, a, factor); 
