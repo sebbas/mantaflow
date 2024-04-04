@@ -372,17 +372,17 @@ void knMpmMapMACGridToVec3(
 	T F = (T(Vec3(1.)) + dt * affineMomentum[idx]) * deformationGrad[idx];
 
 	// SVD
-	T svd_U(Vec3(0.)), sig(Vec3(0.)), svd_V(Vec3(0.));
-	svd(F, svd_U, sig, svd_V);
+	T svdU(Vec3(0.)), Sig(Vec3(0.)), svdV(Vec3(0.));
+	svd(F, svdU, svdV, Sig);
 
 	// Snow plasticity
 	const int sizeSig = (is3D) ? 3 : 2;
 	for (int i = 0; i < sizeSig * int(plastic); i++) {
-		sig(i,i) = clamp(sig(i,i), 1.0f - 2.5e-2f, 1.0f + 7.5e-3f);
+		Sig(i,i) = clamp(Sig(i,i), 1.0f - 2.5e-2f, 1.0f + 7.5e-3f);
 	}
 
 	Real oldJ = F.determinant();
-	F = svd_U * sig * svd_V.transposed();
+	F = svdU * Sig * svdV.transposed();
 	Real Jp_new = clamp(detDeformationGrad[idx] * oldJ / F.determinant(), 0.6f, 20.0f);
 
 	detDeformationGrad[idx] = Jp_new;

@@ -562,16 +562,16 @@ template<typename T> inline void polarDecomp(const T& srcU, const T& srcV, const
 }
 
 //! Perform polar decomposition in 2D
-template<typename T> inline void inlinePolarDecomp(const Matrix2x2<T>& m, Matrix2x2<T>& R, Matrix2x2<T>& S) {
-	Real x = m(0, 0) + m(1, 1);
-	Real y = m(1, 0) - m(0, 1);
+template<typename T> inline void inlinePolarDecomp(const Matrix2x2<T>& A, Matrix2x2<T>& R, Matrix2x2<T>& S) {
+	Real x = A(0, 0) + A(1, 1);
+	Real y = A(1, 0) - A(0, 1);
 	Real scale = 1.0f / std::sqrt(x * x + y * y);
 	Real c = x * scale, s = y * scale;
 	R(0, 0) = c;
 	R(0, 1) = -s;
 	R(1, 0) = s;
 	R(1, 1) = c;
-	S = R.transposed() * m;
+	S = R.transposed() * A;
 }
 
 template<typename T> void polarDecomposition(const Matrix3x3<T>& A, Matrix3x3<T>& R, Matrix3x3<T>& S) {
@@ -636,9 +636,9 @@ template<typename T> void eigenSVD2x2(const Matrix2x2<T>& srcA, Matrix2x2<T>& de
 #endif
 
 //! Perform SVD without libs in 2D (faster than when using Eigen, is based on http://www.seas.upenn.edu/~cffjiang/research/svd/svd.pdf)
-template<typename T> inline void inlineSVD(const Matrix2x2<T>& srcM, Matrix2x2<T>& destU, Matrix2x2<T>& destSig, Matrix2x2<T>& destV) {
+template<typename T> inline void inlineSVD(const Matrix2x2<T>& srcA, Matrix2x2<T>& destU, Matrix2x2<T>& destV, Matrix2x2<T>& destSig) {
 	Matrix2x2<T> S;
-	polarDecomposition(srcM, destU, S, false);
+	polarDecomposition(srcA, destU, S, false);
 	Real c, s;
 	if (std::abs(S(0, 1)) < 1e-6) {
 		destSig = S;
@@ -669,23 +669,24 @@ template<typename T> inline void inlineSVD(const Matrix2x2<T>& srcM, Matrix2x2<T
 	destU = destU * destV;
 }
 
-template<typename T> void svd(const Matrix3x3<T>& A, Matrix3x3<T>& U, Matrix3x3<T>& V, Matrix3x3<T>& Sig) {
+template<typename T> void svd(const Matrix3x3<T>& A, Matrix3x3<T>& U, Matrix3x3<T>& V, Matrix3x3<T>& Sig, bool usingEigen=true) {
+	unusedParameter(usingEigen); // 3x3 SVD only possible with Eigen for now
 #if EIGEN==1
-	eigenSVD3x3(A, U, Sig, V);
+	eigenSVD3x3(A, U, V, Sig);
 #else
 	debMsg("Cannot compute SVD without Eigen lib", 1);
 #endif
 }
 
-template<typename T> void svd(const Matrix2x2<T>& A, Matrix2x2<T>& U, Matrix2x2<T>& Sig, Matrix2x2<T>& V, bool usingEigen=false) {
+template<typename T> void svd(const Matrix2x2<T>& A, Matrix2x2<T>& U, Matrix2x2<T>& V, Matrix2x2<T>& Sig, bool usingEigen=true) {
 	if (usingEigen) {
 #if EIGEN==1
-		eigenSVD2x2(A, U, Sig, V);
+		eigenSVD2x2(A, U, V, Sig);
 #else
 		debMsg("Cannot compute SVD without Eigen lib. But can do with usingEigen=false", 1);
 #endif
 	} else {
-		inlineSVD(A, U, Sig, V);
+		inlineSVD(A, U, V, Sig);
 	}
 }
 
