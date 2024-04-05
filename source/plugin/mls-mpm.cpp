@@ -140,6 +140,7 @@ void knMpmMapVec3ToMACGrid(
 	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
 	bool thisInBounds = vel.isInBounds(base);
 
+	// Neighbor loop: Iterate over neighboring cells of this particle
 	for (int k = loopStart.z; k < sizeK; k++)
 	for (int j = loopStart.y; j < sizeJ; j++)
 	for (int i = loopStart.x; i < sizeI; i++)
@@ -153,7 +154,7 @@ void knMpmMapVec3ToMACGrid(
 		aff = affine * dpos;
 		weight = w[i].x * w[j].y * w[k].z;
 
-		// Grid write operations are most expensive
+		// Grid access is not cache optimal here (i.e. most expensive part of this function)
 		vel(targetPos) += weight * (vel_x_mass + aff) * dimFactor;
 		mass(targetPos) += weight * pmass;
 	}
@@ -320,9 +321,9 @@ void knMpmMapMACGridToVec3(
 		w[2].z = 1.;
 	}
 
-	affineMomentum[idx] = T(Vec3(0.));
-	pvel[idx] = Vec3(0.);
+	Vec3 pvelAcc = Vec3(0.); // Accumulate pvel in for-loop
 	T outerProd(Vec3(0.));
+	T outerProdAcc(Vec3(0.)); // Accumulate outerProd in for-loop
 
 	const int sizeFull = sizeof(w) / sizeof(w[0]);
 	int sizeI, sizeJ, sizeK;
@@ -347,6 +348,7 @@ void knMpmMapMACGridToVec3(
 	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
 	bool thisInBounds = vel.isInBounds(base);
 
+	// Neighbor loop: Iterate over neighboring cells of this particle
 	for (int k = loopStart.z; k < sizeK; k++)
 	for (int j = loopStart.y; j < sizeJ; j++)
 	for (int i = loopStart.x; i < sizeI; i++)
@@ -359,11 +361,14 @@ void knMpmMapMACGridToVec3(
 
 		gridVel = vel(targetPos) * dimFactor;
 		weight = w[i].x * w[j].y * w[k].z;
-		pvel[idx] += weight * gridVel;
+		pvelAcc += weight * gridVel;
 
 		outerProduct(outerProd, weight * gridVel, dpos * dimFactor);
-		affineMomentum[idx] += 4 * outerProd;
+		outerProdAcc += 4 * outerProd;
 	}
+	// Copy accumulated values into actual particle data-structures (outside of for-loop for better performance)
+	pvel[idx] = pvelAcc;
+	affineMomentum[idx] = outerProdAcc;
 
 	// Advection
 	pp[idx].pos += dt * pvel[idx];
