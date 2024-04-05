@@ -137,7 +137,7 @@ void knMpmMapVec3ToMACGrid(
 	const Vec3 dimFactor = (is3D) ? Vec3(1) : Vec3(1,1,0);
 
 	// Check if current and outermost cell is in bounds (knowledge saves time in neighbor loop)
-	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
+	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI-1,sizeJ-1,sizeK-1));
 	bool thisInBounds = vel.isInBounds(base);
 
 	// Neighbor loop: Iterate over neighboring cells of this particle
@@ -345,7 +345,7 @@ void knMpmMapMACGridToVec3(
 	const Vec3 dimFactor = (is3D) ? Vec3(1) : Vec3(1,1,0);
 
 	// Check if current and outermost cell is in bounds (knowledge saves time in neighbor loop)
-	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI,sizeJ,sizeK));
+	bool upperInBounds = vel.isInBounds(base + toVec3i(sizeI-1,sizeJ-1,sizeK-1));
 	bool thisInBounds = vel.isInBounds(base);
 
 	// Neighbor loop: Iterate over neighboring cells of this particle
