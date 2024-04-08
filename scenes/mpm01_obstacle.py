@@ -11,6 +11,7 @@ res = 200
 withMesh = 1
 withObs = 1
 withPseudo3D = 0 # simulate with 3D grids but 2D MPM functions
+withParallelParts = 1 # enable parallel "parts-to-grid" mapping in 3D (noticeably faster when using lots of particles)
 
 gs = vec3(res,res,res/4)
 if (dim==2):
@@ -49,51 +50,22 @@ pVel     = pp.create(PdataVec3)
 dummy    = s.create(RealGrid) # just for nicer grid view in GUI
 mass     = s.create(RealGrid)
 
-# acceleration grids for 3D "parts-to-grid" mapping, only use when using lots of particles
-numKernels = 3 # choose from 1 (no parallelization), 3 (parallel k) or 9 (parallel j and k)
-assert numKernels == 1 or numKernels == 3 or numKernels == 9, "Invalid number of kernels"
-
 # placeholders for acceleration grids
 kernelGrid = None
-velI01  = None
-velI02  = None
-velI10  = None
-velI11  = None
-velI12  = None
-velI20  = None
-velI21  = None
-velI22  = None
-massI01 = None
-massI02 = None
-massI10 = None
-massI11 = None
-massI12 = None
-massI20 = None
-massI21 = None
-massI22 = None
+velK1  = None
+velK2  = None
+massK1 = None
+massK2 = None
 
-if dim == 3 and (numKernels == 3 or numKernels == 9):
-	gsKernel       = vec3(1,1,3) if numKernels == 3 else vec3(1,3,3)
+if dim == 3 and withParallelParts:
+	gsKernel       = vec3(1,1,3)
 	sAcc           = Solver(name='kernelHelper', gridSize=gsKernel, dim=dim)
 	sAcc.updateGui = False
 	kernelGrid     = sAcc.create(RealGrid)
-	velI01  = s.create(MACGrid)  # k=1
-	velI02  = s.create(MACGrid)  # k=2
-	massI01 = s.create(RealGrid) # k=1
-	massI02 = s.create(RealGrid) # k=2
-	if numKernels == 9:
-		velI10  = s.create(MACGrid)  # j=1, k=0
-		velI11  = s.create(MACGrid)  # j=1, k=1
-		velI12  = s.create(MACGrid)  # j=1, k=2
-		velI20  = s.create(MACGrid)  # j=2, k=0
-		velI21  = s.create(MACGrid)  # j=2, k=1
-		velI22  = s.create(MACGrid)  # j=2, k=2
-		massI10 = s.create(RealGrid) # j=1, k=0
-		massI11 = s.create(RealGrid) # j=1, k=1
-		massI12 = s.create(RealGrid) # j=1, k=2
-		massI20 = s.create(RealGrid) # j=2, k=0
-		massI21 = s.create(RealGrid) # j=2, k=1
-		massI22 = s.create(RealGrid) # j=2, k=2
+	velK1  = s.create(MACGrid)  # k=1
+	velK2  = s.create(MACGrid)  # k=2
+	massK1 = s.create(RealGrid) # k=1
+	massK2 = s.create(RealGrid) # k=2
 
 # acceleration data for particle nbs
 pindex   = s.create(ParticleIndexSystem)
@@ -151,21 +123,20 @@ if (GUI):
 startTime = time.time()
 runtime = int(1e5) if (dim == 2 or withPseudo3D) else int(5e2)
 
-for t in range(runtime):
+for t in xrange(runtime):
 	#mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if (dim == 2 or withPseudo3D):
 		polarDecomposition2D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid2D(vel=vel, mass=mass, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, rotation=R, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
+		mpmMapPartsToMACGrid2D(vel=vel, mass=mass, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+			affineMomentum=C, rotation=R, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 	else:
 		polarDecomposition3D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid3D(pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, rotation=R, kernelGrid=kernelGrid,
-								velI00=vel, velI01=velI01, velI02=velI02, velI10=velI10, velI11=velI11, velI12=velI12, velI20=velI20, velI21=velI21, velI22=velI22,
-								massI00=mass, massI01=massI01, massI02=massI02, massI10=massI10, massI11=massI11, massI12=massI12, massI20=massI20, massI21=massI21, massI22=massI22,
-								hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
+		mpmMapPartsToMACGrid3D(vel=vel, mass=mass, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velK1=velK1, velK2=velK2, massK1=massK1, massK2=massK2,
+			hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 
-	markFluidCells(parts=pp, flags=flags)
-	mpmUpdateGrid(flags=flags, pp=pp, vel=vel, mass=mass, gravity=gravity)
+	mpmUpdateGrid(flags=flags, pp=pp, gravity=gravity, vel=vel, mass=mass, velK1=velK1, velK2=velK2, massK1=massK1, massK2=massK2)
 	
 	if (dim == 2 or withPseudo3D):
 		mpmMapMACGridToParts2D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
