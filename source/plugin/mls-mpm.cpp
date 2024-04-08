@@ -290,9 +290,9 @@ void knMpmMapMACGridToVec3(
 		w[2].z = 1.;
 	}
 
-	Vec3 pvelAcc = Vec3(0.); // Accumulate pvel in for-loop
+	Vec3 pvelNew = Vec3(0.); // Stores new pvel from for-loop
 	T outerProd(Vec3(0.));
-	T outerProdAcc(Vec3(0.)); // Accumulate outerProd in for-loop
+	T affineMomentumNew(Vec3(0.)); // Stores new affine momentum from for-loop
 
 	const int sizeFull = sizeof(w) / sizeof(w[0]);
 	int sizeI, sizeJ, sizeK;
@@ -330,14 +330,14 @@ void knMpmMapMACGridToVec3(
 
 		gridVel = vel(targetPos) * dimFactor;
 		weight = w[i].x * w[j].y * w[k].z;
-		pvelAcc += weight * gridVel;
+		pvelNew += weight * gridVel;
 
 		outerProduct(outerProd, weight * gridVel, dpos * dimFactor);
-		outerProdAcc += 4 * outerProd;
+		affineMomentumNew += 4 * outerProd;
 	}
 	// Copy accumulated values into actual particle data-structures (outside of for-loop for better performance)
-	pvel[idx] = pvelAcc;
-	affineMomentum[idx] = outerProdAcc;
+	pvel[idx] = pvelNew;
+	affineMomentum[idx] = affineMomentumNew;
 
 	// Advection
 	pp[idx].pos += dt * pvel[idx];
