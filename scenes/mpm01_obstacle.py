@@ -101,7 +101,7 @@ if withObs:
 flags.updateFromLevelset(phiInit)
 phiInit.subtract(phiObs)
 
-sampleFlagsWithParticles(flags=flags, parts=pp, discretization=particleNumber, randomness=0.1)
+sampleLevelsetWithParticles(phi=phiInit, flags=flags, parts=pp, discretization=particleNumber, randomness=0.1)
 setObstacleFlags(flags=flags, phiObs=phiObs)
 
 # Initialize particle data structures (after sampling particles!)
