@@ -11,7 +11,7 @@ res = 200
 withMesh = 1
 withObs = 1
 withPseudo3D = 0 # simulate with 3D grids but 2D MPM functions
-withParallelParts = 1 # enable parallel "parts-to-grid" mapping in 3D (noticeably faster when using lots of particles)
+withParallelParts = 1 # enable parallel "parts-to-grid" mapping (noticeably faster when using lots of particles)
 
 gs = vec3(res,res,res/4)
 if (dim==2):
@@ -52,20 +52,21 @@ mass     = s.create(RealGrid)
 
 # placeholders for acceleration grids
 kernelGrid = None
-velK1  = None
-velK2  = None
-massK1 = None
-massK2 = None
+velTmp1  = None
+velTmp2  = None
+massTmp1 = None
+massTmp2 = None
 
-if dim == 3 and withParallelParts:
-	gsKernel       = vec3(1,1,3)
+if withParallelParts:
+	# In 2D parallelize j neighbor cell search, in 3D parallelize k neighbor cell search
+	gsKernel       = vec3(1,3,1) if (dim == 2 or withPseudo3D) else vec3(1,1,3)
 	sAcc           = Solver(name='kernelHelper', gridSize=gsKernel, dim=dim)
 	sAcc.updateGui = False
 	kernelGrid     = sAcc.create(RealGrid)
-	velK1  = s.create(MACGrid)  # k=1
-	velK2  = s.create(MACGrid)  # k=2
-	massK1 = s.create(RealGrid) # k=1
-	massK2 = s.create(RealGrid) # k=2
+	velTmp1  = s.create(MACGrid)
+	velTmp2  = s.create(MACGrid)
+	massTmp1 = s.create(RealGrid)
+	massTmp2 = s.create(RealGrid)
 
 # acceleration data for particle nbs
 pindex   = s.create(ParticleIndexSystem)
@@ -128,20 +129,23 @@ for t in xrange(runtime):
 
 	if (dim == 2 or withPseudo3D):
 		polarDecomposition2D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid2D(vel=vel, mass=mass, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
-			affineMomentum=C, rotation=R, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
+		mpmMapPartsToMACGrid2D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp1=velTmp1, velTmp2=velTmp2, massTmp1=massTmp1, massTmp2=massTmp2,
+			hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 	else:
 		polarDecomposition3D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid3D(vel=vel, mass=mass, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
-			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velK1=velK1, velK2=velK2, massK1=massK1, massK2=massK2,
+		mpmMapPartsToMACGrid3D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp1=velTmp1, velTmp2=velTmp2, massTmp1=massTmp1, massTmp2=massTmp2,
 			hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 
-	mpmUpdateGrid(flags=flags, pp=pp, gravity=gravity, vel=vel, mass=mass, velK1=velK1, velK2=velK2, massK1=massK1, massK2=massK2)
-	
+	mpmUpdateGrid(flags=flags, pp=pp, gravity=gravity, vel=vel, mass=mass, velTmp1=velTmp1, velTmp2=velTmp2, massTmp1=massTmp1, massTmp2=massTmp2)
+
 	if (dim == 2 or withPseudo3D):
-		mpmMapMACGridToParts2D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
+		mpmMapMACGridToParts2D(pp=pp, vel=vel, mass=mass, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
 	else:
-		mpmMapMACGridToParts3D(pp=pp, vel=vel, mass=mass, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
+		mpmMapMACGridToParts3D(pp=pp, vel=vel, mass=mass, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F, affineMomentum=C, plastic=plastic)
+
+	pushOutofObs(parts=pp, flags=flags, phiObs=phiObs, shift=2)
 
 	s.step()
 
