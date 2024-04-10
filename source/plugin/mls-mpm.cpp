@@ -259,19 +259,29 @@ void KnMpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp,  const Vec3
 		(*massTmp2)(i,j,k) = 0.;
 	}
 
-	// Assume solid no-slip boundaries at all walls
-	if (flags.isObstacle(i,j,k)) {
-		vel(i,j,k) = Vec3(0.);
-		mass(i,j,k) = 0.;
-		return;
-	}
-
 	// Normalize by mass
 	vel(i,j,k) /= mass(i,j,k);
 	mass(i,j,k) /= mass(i,j,k);
 
-	const Real dt = pp.getParent()->getDt();
-	vel(i,j,k) += dt * gravity;
+	// Velocity update in grid
+	vel(i,j,k) += pp.getParent()->getDt() * gravity;
+
+	// Handle behavior at boundaries / obstacles (similar to setWallBcs())
+	const bool curObs = flags.isObstacle(i,j,k);
+	Vec3 bcsVel(0.,0.,0.);
+	if (obvel) {
+		bcsVel.x = (*obvel)(i,j,k).x;
+		bcsVel.y = (*obvel)(i,j,k).y;
+		if((*obvel).is3D()) bcsVel.z = (*obvel)(i,j,k).z;
+	}
+	if (i>0 && flags.isObstacle(i-1,j,k))					{ vel(i,j,k).x = bcsVel.x; mass(i,j,k) = 0.; }
+	if (i>0 && curObs && flags.isFluid(i-1,j,k))			{ vel(i,j,k).x = bcsVel.x; mass(i,j,k) = 0.; }
+	if (j>0 && flags.isObstacle(i,j-1,k))					{ vel(i,j,k).y = bcsVel.y; mass(i,j,k) = 0.; }
+	if (j>0 && curObs && flags.isFluid(i,j-1,k))			{ vel(i,j,k).y = bcsVel.y; mass(i,j,k) = 0.; }
+	if(!vel.is3D()) 										{ vel(i,j,k).z = 0; }
+	else {	if (k>0 && flags.isObstacle(i,j,k-1))			{ vel(i,j,k).z = bcsVel.z; mass(i,j,k) = 0.; }
+			if (k>0 && curObs && flags.isFluid(i,j,k-1))	{ vel(i,j,k).z = bcsVel.z; mass(i,j,k) = 0.; }
+	}
 }
 
 PYTHON() void mpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
