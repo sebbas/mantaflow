@@ -181,7 +181,7 @@ void KernelHelper(const Grid<Real>& kernelGrid, const BasicParticleSystem& pp, F
 	// -1: loop full range, 0 or k, j: loop in exactly this location
 	const int jStart = (is3D) ? -1 : j;
 	const int kStart = (is3D) ? k : 0;
-	knMpmMapVec3ToMACGrid(pp, *velSelect, *massSelect, flags, pvel, detDeformationGrad, deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, jStart, kStart, is3D);
+	knMpmMapVec3ToMACGrid<T>(pp, *velSelect, *massSelect, flags, pvel, detDeformationGrad, deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, jStart, kStart, is3D);
 }
 
 PYTHON() void mpmMapPartsToMACGrid2D(MACGrid& vel, Grid<Real>& mass, FlagGrid& flags,
@@ -204,7 +204,7 @@ PYTHON() void mpmMapPartsToMACGrid2D(MACGrid& vel, Grid<Real>& mass, FlagGrid& f
 	}
 
 	// Compute particle data with multiple threads
-	KernelHelper helper (*kernelGrid, pp, flags,
+	KernelHelper<Matrix2x2f>(*kernelGrid, pp, flags,
 		&vel, velTmp1, velTmp2, &mass, massTmp1, massTmp2, 
 		pvel, detDeformationGrad, deformationGrad, affineMomentum, rotation, hardening, E, nu, pmass, pvol, is3D);
 }
@@ -232,7 +232,7 @@ PYTHON() void mpmMapPartsToMACGrid3D(MACGrid& vel, Grid<Real>& mass, FlagGrid& f
 	}
 
 	// Compute particle data with multiple threads
-	KernelHelper helper (*kernelGrid, pp, flags,
+	KernelHelper<Matrix3x3f>(*kernelGrid, pp, flags,
 		&vel, velTmp1, velTmp2, &mass, massTmp1, massTmp2, 
 		pvel, detDeformationGrad, deformationGrad, affineMomentum, rotation, hardening, E, nu, pmass, pvol, is3D);
 }
