@@ -118,8 +118,8 @@ void knMpmMapVec3ToMACGrid(
 
 	const int sizeQKernel = sizeof(w) / sizeof(w[0]);
 	const int sizeI = sizeQKernel;
-	int k = kStart, sizeK = kStart + 1;
-	int j = jStart, sizeJ = jStart + 1;
+	int sizeK = kStart + 1;
+	int sizeJ = jStart + 1;
 
 	// Loop dimension in full range if no specific k or j given
 	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
@@ -324,7 +324,7 @@ void knMpmMapMACGridToVec3(
 
 	const int sizeQKernel = sizeof(w) / sizeof(w[0]);
 	const int sizeI = sizeQKernel, sizeJ = sizeQKernel;
-	int k = kStart, sizeK = kStart + 1;
+	int sizeK = kStart + 1;
 	// Loop k dimension in full range if no specific k given
 	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
 
