@@ -73,7 +73,7 @@ void knMpmMapVec3ToMACGrid(
 	const BasicParticleSystem& pp, MACGrid& vel, Grid<Real>& mass, FlagGrid& flags,
 	const ParticleDataImpl<Vec3>& pvel, const ParticleDataImpl<Real>& detDeformationGrad,
 	const ParticleDataImpl<T>& deformationGrad, const ParticleDataImpl<T>& R, const ParticleDataImpl<T>& affineMomentum,
-	const Real hardening, const Real E, const Real nu, const Real pmass, const Real pvol, const int jStart, const int kStart, const bool is3D)
+	const Real hardening, const Real E, const Real nu, const Real pmass, const Real pvol, int jStart, int kStart, const bool is3D)
 {
 	// Initial Lame parameters
 	const Real mu_0 = E / (2 * (1 + nu));
@@ -122,8 +122,8 @@ void knMpmMapVec3ToMACGrid(
 	int j = jStart, sizeJ = jStart + 1;
 
 	// Loop dimension in full range if no specific k or j given
-	if (kStart == -1) { k = 0; sizeK = sizeQKernel; }
-	if (jStart == -1) { j = 0; sizeJ = sizeQKernel; }
+	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
+	if (jStart == -1) { jStart = 0; sizeJ = sizeQKernel; }
 
 	Vec3 dpos, aff;
 	IndexInt targetPos;
@@ -138,8 +138,8 @@ void knMpmMapVec3ToMACGrid(
 	const bool thisInBounds = vel.isInBounds(base);
 
 	// Neighbor loop: Iterate over neighboring cells of this particle
-	for (         ; k < sizeK; k++)
-	for (         ; j < sizeJ; j++)
+	for (int k = kStart; k < sizeK; k++)
+	for (int j = jStart; j < sizeJ; j++)
 	for (int i = 0; i < sizeI; i++)
 	{
 		// Only perform bounds check for current ijk if this or upper bound cell are not in bounds (saves time)
@@ -294,7 +294,7 @@ KERNEL(pts, bnd=0) template<class T>
 void knMpmMapMACGridToVec3(
 	BasicParticleSystem& pp, const MACGrid& vel, const Grid<Real>& mass, FlagGrid& flags,
 	ParticleDataImpl<Vec3>& pvel, ParticleDataImpl<Real>& detDeformationGrad, ParticleDataImpl<T>& deformationGrad,
-	ParticleDataImpl<T>& affineMomentum, const bool plastic, const int kStart, const bool is3D)
+	ParticleDataImpl<T>& affineMomentum, const bool plastic, int kStart, const bool is3D)
 {
 	// Domain parameters
 	const Real dt = pp.getParent()->getDt();
@@ -326,7 +326,7 @@ void knMpmMapMACGridToVec3(
 	const int sizeI = sizeQKernel, sizeJ = sizeQKernel;
 	int k = kStart, sizeK = kStart + 1;
 	// Loop k dimension in full range if no specific k given
-	if (kStart == -1) { k = 0; sizeK = sizeQKernel; }
+	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
 
 	Vec3 dpos, gridVel;
 	IndexInt targetPos;
@@ -340,7 +340,7 @@ void knMpmMapMACGridToVec3(
 	const bool thisInBounds = vel.isInBounds(base);
 
 	// Neighbor loop: Iterate over neighboring cells of this particle
-	for (         ; k < sizeK; k++)
+	for (int k = kStart; k < sizeK; k++)
 	for (int j = 0; j < sizeJ; j++)
 	for (int i = 0; i < sizeI; i++)
 	{
