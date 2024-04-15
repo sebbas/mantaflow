@@ -73,8 +73,11 @@ void knMpmMapVec3ToMACGrid(
 	const BasicParticleSystem& pp, MACGrid& vel, Grid<Real>& mass, FlagGrid& flags,
 	const ParticleDataImpl<Vec3>& pvel, const ParticleDataImpl<Real>& detDeformationGrad,
 	const ParticleDataImpl<T>& deformationGrad, const ParticleDataImpl<T>& R, const ParticleDataImpl<T>& affineMomentum,
-	const Real hardening, const Real E, const Real nu, const Real pmass, const Real pvol, int jStart, int kStart, const bool is3D)
+	const Real hardening, const Real E, const Real nu, const Real pmass, const Real pvol, int kStart, const bool is3D, const int sIdx=0, const int eIdx=0)
 {
+	// Exit if pts index is not in range [sIdx, eIdx]
+	if (eIdx > 0 && (idx < sIdx || idx > eIdx)) return;
+
 	// Initial Lame parameters
 	const Real mu_0 = E / (2 * (1 + nu));
 	const Real lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu));
@@ -117,13 +120,10 @@ void knMpmMapVec3ToMACGrid(
 	const T affine = stress + pmass * affineMomentum[idx];
 
 	const int sizeQKernel = sizeof(w) / sizeof(w[0]);
-	const int sizeI = sizeQKernel;
+	const int sizeI = sizeQKernel, sizeJ = sizeQKernel;
 	int sizeK = kStart + 1;
-	int sizeJ = jStart + 1;
-
-	// Loop dimension in full range if no specific k or j given
+	// Loop dimension in full range if no specific k given
 	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
-	if (jStart == -1) { jStart = 0; sizeJ = sizeQKernel; }
 
 	Vec3 dpos, aff;
 	IndexInt targetPos;
@@ -139,7 +139,7 @@ void knMpmMapVec3ToMACGrid(
 
 	// Neighbor loop: Iterate over neighboring cells of this particle
 	for (int k = kStart; k < sizeK; k++)
-	for (int j = jStart; j < sizeJ; j++)
+	for (int j = 0; j < sizeJ; j++)
 	for (int i = 0; i < sizeI; i++)
 	{
 		// Only perform bounds check for current ijk if this or upper bound cell are not in bounds (saves time)
@@ -163,105 +163,118 @@ void knMpmMapVec3ToMACGrid(
 
 KERNEL() template<class T>
 void KernelHelper(const Grid<Real>& kernelGrid, const BasicParticleSystem& pp, FlagGrid& flags,
-	MACGrid* vel, MACGrid* velTmp1, MACGrid* velTmp2,
-	Grid<Real>* mass, Grid<Real>* massTmp1, Grid<Real>* massTmp2,
+	MACGrid& vel, MACGrid* velTmp0, MACGrid* velTmp1, MACGrid* velTmp2,
+	Grid<Real>& mass, Grid<Real>* massTmp0, Grid<Real>* massTmp1, Grid<Real>* massTmp2,
 	const ParticleDataImpl<Vec3>& pvel, const ParticleDataImpl<Real>& detDeformationGrad,
 	const ParticleDataImpl<T>& deformationGrad, const ParticleDataImpl<T>& affineMomentum, const ParticleDataImpl<T>& rotation,
 	const Real hardening, const Real E, const Real nu, const Real pmass, const Real pvol, bool is3D)
 {
-	// assertMsg(i <= 2 && j <= 2 && k <= 2, "Unsupported grid size. Ensure size kernelGrid is at most 3x3x3");
+	// Clear global grids while while new data is computed and stored in tmp grids
+	if (k == 0) { vel.clear(); return; }
+	if (k == 1) { mass.clear(); return; }
+
+	// Use multiple tmp grids to compute new vel/mass in parallel
 	MACGrid* velSelect = nullptr;
 	Grid<Real>* massSelect = nullptr;
-	if ((k == 0 && is3D) || (j == 0 && !is3D)) { velSelect = vel; massSelect = mass; }
-	if ((k == 1 && is3D) || (j == 1 && !is3D)) { velSelect = velTmp1; massSelect = massTmp1; }
-	if ((k == 2 && is3D) || (j == 2 && !is3D)) { velSelect = velTmp2; massSelect = massTmp2; }
-	// assertMsg(vel != nullptr, "vel grid pointer must not be be null");
-	// assertMsg(mass != nullptr, "mass grid pointer must not be be null");
+	int chunkPos = 0;
+	if (k == 2) { velSelect = velTmp0; massSelect = massTmp0; chunkPos = 0; }
+	if (k == 3) { velSelect = velTmp1; massSelect = massTmp1; chunkPos = 1; }
+	if (k == 4) { velSelect = velTmp2; massSelect = massTmp2; chunkPos = 2; }
+	if (k >= 5) { return; }
 
-	// -1: loop full range, 0 or k, j: loop in exactly this location
-	const int jStart = (is3D) ? -1 : j;
-	const int kStart = (is3D) ? k : 0;
-	knMpmMapVec3ToMACGrid<T>(pp, *velSelect, *massSelect, flags, pvel, detDeformationGrad, deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, jStart, kStart, is3D);
+	const int numKernels = 3; // I.e. number of tmp grid pairs 
+	const int kStart = (is3D) ? -1 : 0; // -1: loop full range, 0: loop exactly this dim
+	const int chunkSize = pvel.size() / numKernels;
+	const bool isLastChunk = (chunkPos == numKernels-1);
+	const int sIdx = chunkPos * chunkSize;
+	const int eIdx = (isLastChunk) ? pvel.size() : sIdx + chunkSize;
+
+	knMpmMapVec3ToMACGrid<T>(pp, *velSelect, *massSelect, flags, pvel, detDeformationGrad,
+		deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, kStart, is3D, sIdx, eIdx);
 }
 
 PYTHON() void mpmMapPartsToMACGrid2D(MACGrid& vel, Grid<Real>& mass, FlagGrid& flags,
 	const BasicParticleSystem& pp, const ParticleDataImpl<Vec3>& pvel, const ParticleDataImpl<Real>& detDeformationGrad,
 	const ParticleDataImpl<Matrix2x2f>& deformationGrad, const ParticleDataImpl<Matrix2x2f>& affineMomentum, const ParticleDataImpl<Matrix2x2f>& rotation,
-	Grid<Real>* kernelGrid=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr,
+	Grid<Real>* kernelGrid=nullptr, MACGrid* velTmp0=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr,
+	Grid<Real>* massTmp0=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr,
 	const Real hardening=10.0f, const Real E=1e4f, const Real nu=0.2f, const Real pmass=1.0f, const Real pvol=1.0f)
 {
-	vel.clear();
-	mass.clear();
-
 	const bool is3D = false;
 
 	// Compute particle data in single thread
 	if (kernelGrid == nullptr) {
-		const int kStart = 0, jStart = -1;
-		const bool is3D = false;
-		knMpmMapVec3ToMACGrid<Matrix2x2f>(pp, vel, mass, flags, pvel, detDeformationGrad, deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, jStart, kStart, is3D);
+		vel.clear();
+		mass.clear();
+		const int kStart = 0;
+		knMpmMapVec3ToMACGrid<Matrix2x2f>(pp, vel, mass, flags, pvel, detDeformationGrad,
+			deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, kStart, is3D);
 		return;
 	}
 
-	// Compute particle data with multiple threads
+	// Compute particle data with multiple threads (number of threads depends on size of kernelgrid)
 	KernelHelper<Matrix2x2f>(*kernelGrid, pp, flags,
-		&vel, velTmp1, velTmp2, &mass, massTmp1, massTmp2, 
+		vel, velTmp0, velTmp1, velTmp2, mass, massTmp0, massTmp1, massTmp2,
 		pvel, detDeformationGrad, deformationGrad, affineMomentum, rotation, hardening, E, nu, pmass, pvol, is3D);
 }
 
 PYTHON() void mpmMapPartsToMACGrid3D(MACGrid& vel, Grid<Real>& mass, FlagGrid& flags,
 	const BasicParticleSystem& pp, const ParticleDataImpl<Vec3>& pvel, const ParticleDataImpl<Real>& detDeformationGrad,
 	const ParticleDataImpl<Matrix3x3f>& deformationGrad, const ParticleDataImpl<Matrix3x3f>& affineMomentum, const ParticleDataImpl<Matrix3x3f>& rotation,
-	Grid<Real>* kernelGrid=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr,
-	Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr,
+	Grid<Real>* kernelGrid=nullptr, MACGrid* velTmp0=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr,
+	Grid<Real>* massTmp0=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr,
 	const Real hardening=10.0f, const Real E=1e4f, const Real nu=0.2f, const Real pmass=1.0f, const Real pvol=1.0f)
 {
-	// assertMsg(vel != nullptr && mass != nullptr, "Missing one of the base grids, check function args");
-
-	// Only have to clear vel and mass, optional kernel buffer grids are cleared in KnMpmUpdateGrid() (this improves performance)
-	vel.clear();
-	mass.clear();
-
 	const bool is3D = true;
 
 	// Compute particle data in single thread
 	if (kernelGrid == nullptr) {
-		const int kStart = -1, jStart = -1;
-		knMpmMapVec3ToMACGrid<Matrix3x3f>(pp, vel, mass, flags, pvel, detDeformationGrad, deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, jStart, kStart, is3D);
+		vel.clear();
+		mass.clear();
+		const int kStart = -1;
+		knMpmMapVec3ToMACGrid<Matrix3x3f>(pp, vel, mass, flags, pvel, detDeformationGrad,
+			deformationGrad, rotation, affineMomentum, hardening, E, nu, pmass, pvol, kStart, is3D);
 		return;
 	}
 
-	// Compute particle data with multiple threads
+	// Compute particle data with multiple threads (number of threads depends on size of kernelgrid)
 	KernelHelper<Matrix3x3f>(*kernelGrid, pp, flags,
-		&vel, velTmp1, velTmp2, &mass, massTmp1, massTmp2, 
+		vel, velTmp0, velTmp1, velTmp2, mass, massTmp0, massTmp1, massTmp2,
 		pvel, detDeformationGrad, deformationGrad, affineMomentum, rotation, hardening, E, nu, pmass, pvol, is3D);
 }
 
 KERNEL(bnd=0)
 void KnMpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp,  const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
-	MACGrid* velTmp1, MACGrid* velTmp2, Grid<Real>* massTmp1, Grid<Real>* massTmp2, const MACGrid* obvel)
+	MACGrid* velTmp0, MACGrid* velTmp1, MACGrid* velTmp2, Grid<Real>* massTmp0, Grid<Real>* massTmp1, Grid<Real>* massTmp2, const MACGrid* obvel)
 {
-	bool withKernelHelper = velTmp1 && massTmp1 && velTmp2 && massTmp2;
+	bool withKernelHelper = velTmp0 && massTmp0 && velTmp1 && massTmp1 && velTmp2 && massTmp2;
 
 	// No grid updates needed in cells with no mass
-	if (withKernelHelper && mass(i,j,k) <= 0 && (*massTmp1)(i,j,k) <= 0 && (*massTmp2)(i,j,k) <= 0) return;
+	if (withKernelHelper && (*massTmp0)(i,j,k) <= 0 && (*massTmp1)(i,j,k) <= 0 && (*massTmp2)(i,j,k) <= 0) return;
 	if (!withKernelHelper && mass(i,j,k) <= 0) return;
 
 	// If using kernel helper grids, add them to global vel and mass grids
 	if (withKernelHelper) {
-		vel(i,j,k) += (*velTmp1)(i,j,k) + (*velTmp2)(i,j,k);
-		mass(i,j,k) += (*massTmp1)(i,j,k) + (*massTmp2)(i,j,k);
+		vel(i,j,k) = (*velTmp0)(i,j,k) + (*velTmp1)(i,j,k) + (*velTmp2)(i,j,k);
+		mass(i,j,k) = (*massTmp0)(i,j,k) + (*massTmp1)(i,j,k) + (*massTmp2)(i,j,k);
 
-		// Vel and mass kernel buffers not needed anymore, clear here
-		(*velTmp1)(i,j,k) = Vec3(0.);
-		(*massTmp1)(i,j,k) = 0.;
-		(*velTmp2)(i,j,k) = Vec3(0.);
-		(*massTmp2)(i,j,k) = 0.;
+		// Vel and mass kernel buffers not needed anymore, clear here, faster than grid.clear()
+		if ((*massTmp0)(i,j,k) > 0) {
+			(*velTmp0)(i,j,k) = Vec3(0.);
+			(*massTmp0)(i,j,k) = 0.;
+		}
+		if ((*massTmp1)(i,j,k) > 0) {
+			(*velTmp1)(i,j,k) = Vec3(0.);
+			(*massTmp1)(i,j,k) = 0.;
+		}
+		if ((*massTmp2)(i,j,k) > 0) {
+			(*velTmp2)(i,j,k) = Vec3(0.);
+			(*massTmp2)(i,j,k) = 0.;
+		}
 	}
 
 	// Normalize by mass
 	vel(i,j,k) /= mass(i,j,k);
-	mass(i,j,k) /= mass(i,j,k);
 
 	// Velocity update in grid
 	vel(i,j,k) += pp.getParent()->getDt() * gravity;
@@ -285,9 +298,10 @@ void KnMpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp,  const Vec3
 }
 
 PYTHON() void mpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
-	MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr, const MACGrid* obvel=nullptr)
+	MACGrid* velTmp0=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr,
+	Grid<Real>* massTmp0=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr, const MACGrid* obvel=nullptr)
 {
-	KnMpmUpdateGrid(flags, pp, gravity, vel, mass, velTmp1, velTmp2, massTmp1, massTmp2, obvel);
+	KnMpmUpdateGrid(flags, pp, gravity, vel, mass, velTmp0, velTmp1, velTmp2, massTmp0, massTmp1, massTmp2, obvel);
 }
 
 KERNEL(pts, bnd=0) template<class T>
