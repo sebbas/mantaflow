@@ -121,9 +121,9 @@ void knMpmMapVec3ToMACGrid(
 
 	const int sizeQKernel = sizeof(w) / sizeof(w[0]);
 	const int sizeI = sizeQKernel, sizeJ = sizeQKernel;
-	int sizeK = kStart + 1;
+	const int sizeK = (kStart == -1) ? sizeQKernel : kStart + 1;
 	// Loop dimension in full range if no specific k given
-	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
+	if (kStart == -1) { kStart = 0; }
 
 	Vec3 dpos, aff;
 	IndexInt targetPos;
@@ -244,7 +244,7 @@ PYTHON() void mpmMapPartsToMACGrid3D(MACGrid& vel, Grid<Real>& mass, FlagGrid& f
 }
 
 KERNEL(bnd=0)
-void KnMpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp,  const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
+void KnMpmUpdateGrid(const FlagGrid& flags, const BasicParticleSystem& pp,  const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
 	MACGrid* velTmp0, MACGrid* velTmp1, MACGrid* velTmp2, Grid<Real>* massTmp0, Grid<Real>* massTmp1, Grid<Real>* massTmp2, const MACGrid* obvel)
 {
 	bool withKernelHelper = velTmp0 && massTmp0 && velTmp1 && massTmp1 && velTmp2 && massTmp2;
@@ -297,7 +297,7 @@ void KnMpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp,  const Vec3
 	}
 }
 
-PYTHON() void mpmUpdateGrid(FlagGrid& flags, const BasicParticleSystem& pp, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
+PYTHON() void mpmUpdateGrid(const FlagGrid& flags, const BasicParticleSystem& pp, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
 	MACGrid* velTmp0=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr,
 	Grid<Real>* massTmp0=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr, const MACGrid* obvel=nullptr)
 {
@@ -338,9 +338,9 @@ void knMpmMapMACGridToVec3(
 
 	const int sizeQKernel = sizeof(w) / sizeof(w[0]);
 	const int sizeI = sizeQKernel, sizeJ = sizeQKernel;
-	int sizeK = kStart + 1;
+	const int sizeK = (kStart == -1) ? sizeQKernel : kStart + 1;
 	// Loop k dimension in full range if no specific k given
-	if (kStart == -1) { kStart = 0; sizeK = sizeQKernel; }
+	if (kStart == -1) { kStart = 0; }
 
 	Vec3 dpos, gridVel;
 	IndexInt targetPos;
@@ -391,9 +391,9 @@ void knMpmMapMACGridToVec3(
 		Sig(i,i) = clamp(Sig(i,i), 1.0f - 2.5e-2f, 1.0f + 7.5e-3f);
 	}
 
-	Real oldJ = F.determinant();
+	const Real oldJ = F.determinant();
 	F = svdU * Sig * svdV.transposed();
-	Real Jp_new = clamp(detDeformationGrad[idx] * oldJ / F.determinant(), 0.6f, 20.0f);
+	const Real Jp_new = clamp(detDeformationGrad[idx] * oldJ / F.determinant(), 0.6f, 20.0f);
 
 	detDeformationGrad[idx] = Jp_new;
 	deformationGrad[idx] = F;
