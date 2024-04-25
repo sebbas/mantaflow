@@ -39,7 +39,7 @@ plastic   = bool(1) # plastic=0 behave more like soft body
 
 # prepare grids and particles
 flags    = s.create(FlagGrid)
-tmpVec3  = s.create(VecGrid)
+dummyVec = s.create(VecGrid) # just for nicer grid view in GUI
 vel      = s.create(MACGrid)
 mesh     = s.create(Mesh)
 pp       = s.create(BasicParticleSystem)
@@ -128,28 +128,28 @@ if (GUI):
 startTime = time.time()
 runtime = int(1e5) if (dim == 2 or withPseudo3D) else int(5e2)
 
-for t in xrange(runtime):
+for t in range(runtime):
 	#mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if (dim == 2 or withPseudo3D):
 		polarDecomposition2D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid2D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapPartsToGrid2D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
 			massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 	else:
 		polarDecomposition3D(A=F, U=R, P=S)
-		mpmMapPartsToMACGrid3D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapPartsToGrid3D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
 			massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 
-	mpmUpdateGrid(flags=flags, pp=pp, gravity=gravity, vel=vel, mass=mass, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
+	mpmUpdateGrid(flags=flags, gravity=gravity, vel=vel, mass=mass, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
 		massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2)
 
 	if (dim == 2 or withPseudo3D):
-		mpmMapMACGridToParts2D(pp=pp, vel=vel, mass=mass, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapGridToParts2D(pp=pp, vel=vel, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, plastic=plastic)
 	else:
-		mpmMapMACGridToParts3D(pp=pp, vel=vel, mass=mass, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapGridToParts3D(pp=pp, vel=vel, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, plastic=plastic)
 
 	pushOutofObs(parts=pp, flags=flags, phiObs=phiObs, shift=2)
