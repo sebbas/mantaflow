@@ -23,6 +23,10 @@
 
 #include <initializer_list>
 
+
+#include <chrono>
+using namespace std::chrono;
+
 namespace Manta {
 class LevelsetGrid;
 
@@ -433,6 +437,10 @@ inline bool GridBase::isInBoundsZ(const Real p) const {
 
 inline bool GridBase::isInBounds(const Vec3i& p) const {
 	return (p.x >= 0 && p.y >= 0 && p.z >= 0 && p.x < mSize.x && p.y < mSize.y && p.z < mSize.z); 
+
+	// int result_greater = _mm_movemask_epi8(_mm_cmpgt_epi32(p.value, _mm_set1_epi32(-1)));
+	// int result_less = _mm_movemask_epi8(_mm_cmplt_epi32(p.value, mSize.value));
+	// return (result_greater == 0xFFFF) && (result_less == 0x0FFF);
 }
 
 inline bool GridBase::isInBounds(const Vec3i& p, int bnd) const {

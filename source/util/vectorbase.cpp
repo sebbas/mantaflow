@@ -17,6 +17,10 @@ using namespace std;
 
 namespace Manta {
 
+//#if defined(__SSE__) || defined(__SSE2__)
+#if 0
+#else
+
 template<> const Vector3D<int> Vector3D<int>::Zero(0, 0, 0);
 template<> const Vector3D<float> Vector3D<float>::Zero(0.f, 0.f, 0.f);
 template<> const Vector3D<double> Vector3D<double>::Zero(0., 0., 0.);
@@ -32,5 +36,6 @@ template<> std::string Vector3D<int>::toString() const {
 	snprintf ( buf,256,"[%d,%d,%d]", ( *this ) [0], ( *this ) [1], ( *this ) [2] );
 	return std::string ( buf );
 }
+#endif
 
 }

@@ -89,14 +89,14 @@ PYTHON() void addBuoyancy(const FlagGrid& flags, const Grid<Real>& density, MACG
 // inflow / outflow boundaries
 
 //! helper to parse openbounds string [xXyYzZ] , convert to vec3 
-inline void convertDescToVec(const string& desc, Vector3D<bool>& lo, Vector3D<bool>& up) {
+inline void convertDescToVec(const string& desc, Vector3D<int>& lo, Vector3D<int>& up) {
 	for (size_t i = 0; i<desc.size(); i++) {
-		if (desc[i] == 'x') lo.x = true;
-		else if (desc[i] == 'y') lo.y = true;
-		else if (desc[i] == 'z') lo.z = true;
-		else if (desc[i] == 'X') up.x = true;
-		else if (desc[i] == 'Y') up.y = true;
-		else if (desc[i] == 'Z') up.z = true;
+		if (desc[i] == 'x') lo.x = 1;
+		else if (desc[i] == 'y') lo.y = 1;
+		else if (desc[i] == 'z') lo.z = 1;
+		else if (desc[i] == 'X') up.x = 1;
+		else if (desc[i] == 'Y') up.y = 1;
+		else if (desc[i] == 'Z') up.z = 1;
 		else errMsg("invalid character in boundary description string. Only [xyzXYZ] allowed.");
 	}
 }
@@ -104,7 +104,7 @@ inline void convertDescToVec(const string& desc, Vector3D<bool>& lo, Vector3D<bo
 //! add empty and outflow flag to cells of open boundaries 
 PYTHON() void setOpenBound(FlagGrid& flags, int bWidth, string openBound = "", int type = FlagGrid::TypeOutflow | FlagGrid::TypeEmpty){
 	if (openBound == "") return;
-	Vector3D<bool> lo, up;
+	Vector3D<int> lo, up;
 	convertDescToVec(openBound, lo, up);
 
 	FOR_IJK(flags){

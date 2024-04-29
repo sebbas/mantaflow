@@ -24,6 +24,8 @@
 #include <limits>
 #include <iostream>
 #include "general.h"
+#include <immintrin.h>
+#include <smmintrin.h>
 
 // if min/max are still around...
 #if defined(WIN32) || defined(_WIN32)
@@ -65,6 +67,786 @@
 namespace Manta
 {
 
+//#if defined(__SSE__) || defined(__SSE2__)
+#if 0
+
+#if defined(__GNUC__)
+	#define ALIGN16 __attribute__((aligned(16)))
+	#define ALIGN32 __attribute__((aligned(32)))
+#elif defined(_MSC_VER)
+	#define ALIGN16 __declspec(align(16))
+	#define ALIGN32 __declspec(align(32))
+#else
+    #error "Unsupported compiler"
+#endif
+
+template<typename T> class Vector3D;
+
+template<>
+class ALIGN16 Vector3D<int>
+{
+public:
+	//! Constructor
+	inline Vector3D() : value(_mm_setzero_si128()) {}
+
+	//! Copy-Constructor
+	inline Vector3D(__m128i m) : value(m) {}
+
+	//! Copy-Constructor
+	inline Vector3D( const float * v) : value(_mm_set_epi32(0, (int)v[2], (int)v[1], (int)v[0])) {}
+
+	//! Copy-Constructor
+	inline Vector3D( const double * v) : value(_mm_set_epi32(0, (int)v[2], (int)v[1], (int)v[0])) {}
+
+	//! Construct a vector from one int
+	inline Vector3D(int v) : value(_mm_set_epi32(0, v, v, v)) {}
+
+	//! Construct a vector from three ints
+	inline Vector3D(int vx, int vy, int vz) : value(_mm_set_epi32(0, vz, vy, vx)) {}
+
+	// Operators
+
+	//! Assignment operator
+	inline const Vector3D<int>& operator= ( const Vector3D<int>& v ) {
+		this->value = _mm_set_epi32(0, v[2], v[1], v[0]);
+		return *this;
+	}
+	//! Assignment operator
+	inline const Vector3D<int>& operator= ( int s ) {
+		this->value = _mm_set_epi32(0, s, s, s);
+		return *this;
+	}
+	//! Assign and add operator
+	inline const Vector3D<int>& operator+= ( const Vector3D<int>& v ) {
+		this->value = _mm_add_epi32(this->value, v.value);
+		return *this;
+	}
+	//! Assign and add operator
+	inline const Vector3D<int>& operator+= ( int s ) {
+		this->value = _mm_add_epi32(this->value, _mm_set1_epi32(s));
+		return *this;
+	}
+	//! Assign and sub operator
+	inline const Vector3D<int>& operator-= ( const Vector3D<int>& v ) {
+		this->value = _mm_sub_epi32(this->value, v.value);
+		return *this;
+	}
+	//! Assign and sub operator
+	inline const Vector3D<int>& operator-= ( int s ) {
+		this->value = _mm_sub_epi32(this->value, _mm_set1_epi32(s));
+		return *this;
+	}
+	//! Assign and mult operator
+	inline const Vector3D<int>& operator*= ( const Vector3D<int>& v ) {
+		this->value = _mm_mul_epi32(this->value, v.value);
+		return *this;
+	}
+	//! Assign and mult operator
+	inline const Vector3D<int>& operator*= ( int s ) {
+		this->value = _mm_mul_epi32(this->value, _mm_set1_epi32(s));
+		return *this;
+	}
+	//! Assign and div operator
+	inline const Vector3D<int>& operator/= ( const Vector3D<int>& v ) {
+		__m128 fcast = _mm_div_ps(_mm_castsi128_ps(this->value), _mm_castsi128_ps(v.value));
+		this->value = _mm_castps_si128(fcast);
+		return *this;
+	}
+	//! Assign and div operator
+	inline const Vector3D<int>& operator/= ( int s ) {
+		__m128 fcast = _mm_div_ps(_mm_castsi128_ps(this->value), _mm_set_ps1((float)s));
+		this->value = _mm_castps_si128(fcast);
+		return *this;
+	}
+	//! Negation operator
+	inline Vector3D<int> operator- () const {
+		return Vector3D<int> (-x, -y, -z);
+	}
+
+	//! Get smallest component
+	inline int min() const {
+		return ( x<y ) ? ( ( x<z ) ? x:z ) : ( ( y<z ) ? y:z );
+	}
+	//! Get biggest component
+	inline int max() const {
+		return ( x>y ) ? ( ( x>z ) ? x:z ) : ( ( y>z ) ? y:z );
+	}
+
+	//! Test if all components are zero
+	inline bool empty() {
+		return _mm_testz_si128(this->value, this->value);
+	}
+
+	//! access operator
+	inline int& operator[] ( unsigned int i ) {
+		return i == 0 ? this->x : (i == 1 ? this->y : this->z);
+	}
+	//! constant access operator
+	inline const int& operator[] ( unsigned int i ) const {
+		return i == 0 ? this->x : (i == 1 ? this->y : this->z);
+	}
+
+	// inline void* operator new(size_t size) {
+	// 	// Allocate memory aligned to 16-byte boundary (required for SSE)
+	// 	void* ptr = _mm_malloc(size, 16);
+	// 	if (!ptr) throw std::bad_alloc();
+	// 	return ptr;
+	// }
+	// inline void operator delete(void* ptr) {
+	// 	_mm_free(ptr);
+	// }
+
+	//! debug output vector to a string
+	std::string toString() const;
+
+	//! test if nans are present
+	bool isValid() const;
+
+	//! actual values
+	union {
+		__m128i value;
+		struct {
+			int x;
+			int y;
+			int z;
+		};
+		struct {
+			int X;
+			int Y;
+			int Z;
+		};
+	};
+
+	//! zero element
+	static const Vector3D<int> Zero, Invalid;
+
+	//! For compatibility with 4d vectors (discards 4th comp)
+	inline Vector3D( int vx, int vy, int vz, int vDummy) : x(vx), y(vy), z(vz) {}
+
+protected:
+
+};
+
+inline const Vector3D<int> Vector3D<int>::Zero(0, 0, 0);
+inline std::string Vector3D<int>::toString() const {
+	char buf[256];
+	snprintf ( buf,256,"[%d,%d,%d]", ( *this ) [0], ( *this ) [1], ( *this ) [2] );
+	return std::string ( buf );
+}
+
+template<>
+class ALIGN16 Vector3D<float>
+{
+public:
+	//! Constructor
+	inline Vector3D() : value(_mm_setzero_ps()) {}
+
+	//! Copy-Constructor
+	inline Vector3D(__m128 m) : value(m) {}
+
+	//! Copy-Constructor
+	inline Vector3D( const float * v) : value(_mm_set_ps(0, v[2], v[1], v[0])) {}
+
+	//! Copy-Constructor
+	inline Vector3D( const double * v) : value(_mm_set_ps(0, (float)v[2], (float)v[1], (float)v[0])) {}
+
+	//! Construct a vector from one float
+	inline Vector3D(float v) : value(_mm_set_ps(0, v, v, v)) {}
+
+	//! Construct a vector from three floats
+	inline Vector3D(float vx, float vy, float vz) : value(_mm_set_ps(0, vz, vy, vx)) {}
+
+	// Operators
+
+	//! Assignment operator
+	inline const Vector3D<float>& operator= ( const Vector3D<float>& v ) {
+		this->value = _mm_set_ps(0, v[2], v[1], v[0]);
+		return *this;
+	}
+	//! Assignment operator
+	inline const Vector3D<float>& operator= ( float s ) {
+		this->value = _mm_set_ps(0, s, s, s);
+		return *this;
+	}
+	//! Assign and add operator
+	inline const Vector3D<float>& operator+= ( const Vector3D<float>& v ) {
+		this->value = _mm_add_ps(this->value, v.value);
+		return *this;
+	}
+	//! Assign and add operator
+	inline const Vector3D<float>& operator+= ( float s ) {
+		this->value = _mm_add_ps(this->value, _mm_set_ps1(s));
+		return *this;
+	}
+	//! Assign and sub operator
+	inline const Vector3D<float>& operator-= ( const Vector3D<float>& v ) {
+		this->value = _mm_sub_ps(this->value, v.value);
+		return *this;
+	}
+	//! Assign and sub operator
+	inline const Vector3D<float>& operator-= ( float s ) {
+		this->value = _mm_sub_ps(this->value, _mm_set_ps1(s));
+		return *this;
+	}
+	//! Assign and mult operator
+	inline const Vector3D<float>& operator*= ( const Vector3D<float>& v ) {
+		this->value = _mm_mul_ps(this->value, v.value);
+		return *this;
+	}
+	//! Assign and mult operator
+	inline const Vector3D<float>& operator*= ( float s ) {
+		this->value = _mm_mul_ps(this->value, _mm_set_ps1(s));
+		return *this;
+	}
+	//! Assign and div operator
+	inline const Vector3D<float>& operator/= ( const Vector3D<float>& v ) {
+		this->value = _mm_div_ps(this->value, v.value);
+		return *this;
+	}
+	//! Assign and div operator
+	inline const Vector3D<float>& operator/= ( float s ) {
+		this->value =_mm_div_ps(this->value, _mm_set_ps1(s));
+		return *this;
+	}
+	//! Negation operator
+	inline Vector3D<float> operator- () const {
+		return Vector3D<float> (-x, -y, -z);
+	}
+
+	//! Get smallest component
+	inline float min() const {
+		return ( x<y ) ? ( ( x<z ) ? x:z ) : ( ( y<z ) ? y:z );
+	}
+	//! Get biggest component
+	inline float max() const {
+		return ( x>y ) ? ( ( x>z ) ? x:z ) : ( ( y>z ) ? y:z );
+	}
+
+	//! Test if all components are zero
+	inline bool empty() {
+		return _mm_testz_ps(this->value, this->value);
+	}
+
+	//! access operator
+	inline float& operator[] ( unsigned int i ) {
+		return i == 0 ? this->x : (i == 1 ? this->y : this->z);
+	}
+	//! constant access operator
+	inline const float& operator[] ( unsigned int i ) const {
+		return i == 0 ? this->x : (i == 1 ? this->y : this->z);
+	}
+
+	// inline void* operator new(size_t size) {
+	// 	// Allocate memory aligned to 16-byte boundary (required for SSE)
+	// 	void* ptr = _mm_malloc(size, 16);
+	// 	if (!ptr) throw std::bad_alloc();
+	// 	return ptr;
+	// }
+	// inline void operator delete(void* ptr) {
+	// 	_mm_free(ptr);
+	// }
+
+	//! debug output vector to a string
+	std::string toString() const;
+
+	//! test if nans are present
+	bool isValid() const;
+
+	//! actual values
+	union {
+		__m128 value;
+		struct {
+			float x;
+			float y;
+			float z;
+		};
+		struct {
+			float X;
+			float Y;
+			float Z;
+		};
+	};
+
+	//! zero element
+	static const Vector3D<float> Zero, Invalid;
+
+	//! For compatibility with 4d vectors (discards 4th comp)
+	inline Vector3D( float vx, float vy, float vz, float vDummy) : x(vx), y(vy), z(vz) {}
+
+protected:
+
+};
+
+inline const Vector3D<float> Vector3D<float>::Zero(0.f, 0.f, 0.f);
+inline const Vector3D<float> Vector3D<float>::Invalid(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN());
+inline bool Vector3D<float>::isValid() const { return !c_isnan(x) && !c_isnan(y) && !c_isnan(z); }
+inline std::string Vector3D<float>::toString() const {
+	char buf[256];
+	snprintf ( buf,256,"[%+4.6f,%+4.6f,%+4.6f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
+	// for debugging, optionally increase precision:
+	//snprintf ( buf,256,"[%+4.16f,%+4.16f,%+4.16f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
+	return std::string ( buf );
+}
+
+template<>
+class ALIGN32 Vector3D<double>
+{
+public:
+	//! Constructor
+	inline Vector3D() : value(_mm256_setzero_pd()) {}
+
+	//! Copy-Constructor
+	inline Vector3D(__m256d m) : value(m) {}
+
+	//! Copy-Constructor
+	inline Vector3D( const float * v) : value(_mm256_set_pd(0, (double)v[2], (double)v[1], (double)v[0])) {}
+
+	//! Copy-Constructor
+	inline Vector3D( const double * v) : value(_mm256_set_pd(0, v[2], v[1], v[0])) {}
+
+	//! Construct a vector from one double
+	inline Vector3D(double v) : value(_mm256_set_pd(0, v, v, v)) {}
+
+	//! Construct a vector from three doubles
+	inline Vector3D(double vx, double vy, double vz) : value(_mm256_set_pd(0, vz, vy, vx)) {}
+
+	// Operators
+
+	//! Assignment operator
+	inline const Vector3D<double>& operator= ( const Vector3D<double>& v ) {
+		this->value = _mm256_set_pd(0, v[2], v[1], v[0]);
+		return *this;
+	}
+	//! Assignment operator
+	inline const Vector3D<double>& operator= ( double s ) {
+		this->value = _mm256_set_pd(0, s, s, s);
+		return *this;
+	}
+	//! Assign and add operator
+	inline const Vector3D<double>& operator+= ( const Vector3D<double>& v ) {
+		this->value = _mm256_add_pd(this->value, v.value);
+		return *this;
+	}
+	//! Assign and add operator
+	inline const Vector3D<double>& operator+= ( double s ) {
+		this->value = _mm256_add_pd(this->value, _mm256_set1_pd(s));
+		return *this;
+	}
+	//! Assign and sub operator
+	inline const Vector3D<double>& operator-= ( const Vector3D<double>& v ) {
+		this->value = _mm256_sub_pd(this->value, v.value);
+		return *this;
+	}
+	//! Assign and sub operator
+	inline const Vector3D<double>& operator-= ( double s ) {
+		this->value = _mm256_sub_pd(this->value, _mm256_set1_pd(s));
+		return *this;
+	}
+	//! Assign and mult operator
+	inline const Vector3D<double>& operator*= ( const Vector3D<double>& v ) {
+		this->value = _mm256_mul_pd(this->value, v.value);
+		return *this;
+	}
+	//! Assign and mult operator
+	inline const Vector3D<double>& operator*= ( double s ) {
+		this->value = _mm256_mul_pd(this->value, _mm256_set1_pd(s));
+		return *this;
+	}
+	//! Assign and div operator
+	inline const Vector3D<double>& operator/= ( const Vector3D<double>& v ) {
+		this->value = _mm256_div_pd(this->value, v.value);
+		return *this;
+	}
+	//! Assign and div operator
+	inline const Vector3D<double>& operator/= ( double s ) {
+		this->value =_mm256_div_pd(this->value, _mm256_set1_pd(s));
+		return *this;
+	}
+	//! Negation operator
+	inline Vector3D<double> operator- () const {
+		return Vector3D<double> (-x, -y, -z);
+	}
+
+	//! Get smallest component 
+	inline double min() const {
+		return ( x<y ) ? ( ( x<z ) ? x:z ) : ( ( y<z ) ? y:z );
+	}
+	//! Get biggest component
+	inline double max() const {
+		return ( x>y ) ? ( ( x>z ) ? x:z ) : ( ( y>z ) ? y:z );
+	}
+
+	//! Test if all components are zero
+	inline bool empty() {
+		return _mm256_testz_pd(this->value, this->value);
+	}
+
+	//! access operator
+	inline double& operator[] ( unsigned int i ) { 
+		return i == 0 ? this->x : (i == 1 ? this->y : this->z);
+	}
+	//! constant access operator
+	inline const double& operator[] ( unsigned int i ) const {
+		return i == 0 ? this->x : (i == 1 ? this->y : this->z);
+	}
+
+	// inline void* operator new(size_t size) {
+	// 	void* ptr = _mm_malloc(size, 32);
+	// 	if (!ptr) throw std::bad_alloc();
+	// 	return ptr;
+	// }
+	// inline void operator delete(void* ptr) {
+	// 	_mm_free(ptr);
+	// }
+
+	//! debug output vector to a string
+	std::string toString() const;
+
+	//! test if nans are present
+	bool isValid() const;
+
+	//! actual values
+	union {
+		__m256d value;
+		struct {
+			double x;
+			double y;
+			double z;
+		};
+		struct {
+			double X;
+			double Y;
+			double Z;
+		};
+	};
+
+	//! zero element
+	static const Vector3D<double> Zero, Invalid;
+
+	//! For compatibility with 4d vectors (discards 4th comp)
+	inline Vector3D( double vx, double vy, double vz, double vDummy) : x(vx), y(vy), z(vz) {}
+
+protected:
+
+};
+
+inline const Vector3D<double> Vector3D<double>::Zero(0., 0., 0.);
+inline const Vector3D<double> Vector3D<double>::Invalid(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
+inline bool Vector3D<double>::isValid() const { return !c_isnan(x) && !c_isnan(y) && !c_isnan(z); }
+inline std::string Vector3D<double>::toString() const {
+	char buf[256];
+	snprintf ( buf,256,"[%+4.6f,%+4.6f,%+4.6f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
+	// for debugging, optionally increase precision:
+	//snprintf ( buf,256,"[%+4.16f,%+4.16f,%+4.16f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
+	return std::string ( buf );
+}
+
+//! helper to check whether value is non-zero
+template<class S>
+inline bool notZero(S v) {
+	return ( std::abs(v) > VECTOR_EPSILON );
+}
+template<class S>
+inline bool notZero(Vector3D<S> v) {
+	return ( std::abs(norm(v)) > VECTOR_EPSILON );
+}
+
+//************************************************************************
+// Additional operators
+//************************************************************************
+
+//! Addition operator ( vec + vec )
+inline Vector3D<float>  operator+ (const Vector3D<float> &v1,  const Vector3D<float> &v2 ) { return Vector3D<float>( _mm_add_ps(v1.value, v2.value) ); }
+inline Vector3D<double> operator+ (const Vector3D<double> &v1, const Vector3D<double> &v2) { return Vector3D<double>( _mm256_add_pd(v1.value, v2.value) ); }
+inline Vector3D<int>    operator+ (const Vector3D<int> &v1,    const Vector3D<int> &v2   ) { return Vector3D<int>( _mm_add_epi32(v1.value, v2.value) ); }
+
+//! Addition operator ( vec + scalar )
+inline Vector3D<float> operator+ (const Vector3D<float>& v, float s ) { return Vector3D<float>( _mm_add_ps(v.value, _mm_set_ps1(s)) ); }
+inline Vector3D<float> operator+ (const Vector3D<float>& v, double s) { return Vector3D<float>( _mm_add_ps(v.value, _mm_set_ps1((float)s)) ); }
+inline Vector3D<float> operator+ (const Vector3D<float>& v, int s   ) { return Vector3D<float>( _mm_add_ps(v.value, _mm_set_ps1((float)s)) ); }
+
+inline Vector3D<double> operator+ (const Vector3D<double>& v, float s ) { return Vector3D<double>( _mm256_add_pd(v.value, _mm256_set1_pd((double)s)) ); }
+inline Vector3D<double> operator+ (const Vector3D<double>& v, double s) { return Vector3D<double>( _mm256_add_pd(v.value, _mm256_set1_pd(s)) ); }
+inline Vector3D<double> operator+ (const Vector3D<double>& v, int s   ) { return Vector3D<double>( _mm256_add_pd(v.value, _mm256_set1_pd((double)s)) ); }
+
+inline Vector3D<int> operator+ (const Vector3D<int>& v, float s ) { return Vector3D<int>( _mm_add_epi32(v.value, _mm_set1_epi32((int)s)) ); }
+inline Vector3D<int> operator+ (const Vector3D<int>& v, double s) { return Vector3D<int>( _mm_add_epi32(v.value, _mm_set1_epi32((int)s)) ); }
+inline Vector3D<int> operator+ (const Vector3D<int>& v, int s   ) { return Vector3D<int>( _mm_add_epi32(v.value, _mm_set1_epi32(s)) ); }
+
+//! Addition operator ( scalar + vec )
+inline Vector3D<float> operator+ (float s,  const Vector3D<float>& v) { return Vector3D<float>( _mm_add_ps(_mm_set_ps1(s), v.value) ); }
+inline Vector3D<float> operator+ (double s, const Vector3D<float>& v) { return Vector3D<float>( _mm_add_ps(_mm_set_ps1((float)s), v.value) ); }
+inline Vector3D<float> operator+ (int s,    const Vector3D<float>& v) { return Vector3D<float>( _mm_add_ps(_mm_set_ps1((float)s), v.value) ); }
+
+inline Vector3D<double> operator+ (float s,  const Vector3D<double>& v) { return Vector3D<double>( _mm256_add_pd(_mm256_set1_pd((double)s), v.value) ); }
+inline Vector3D<double> operator+ (double s, const Vector3D<double>& v) { return Vector3D<double>( _mm256_add_pd(_mm256_set1_pd(s), v.value) ); }
+inline Vector3D<double> operator+ (int s,    const Vector3D<double>& v) { return Vector3D<double>( _mm256_add_pd(_mm256_set1_pd((double)s), v.value) ); }
+
+inline Vector3D<int> operator+ (float s,  const Vector3D<int>& v) { return Vector3D<int>( _mm_add_epi32(_mm_set1_epi32((int)s), v.value) ); }
+inline Vector3D<int> operator+ (double s, const Vector3D<int>& v) { return Vector3D<int>( _mm_add_epi32(_mm_set1_epi32((int)s), v.value) ); }
+inline Vector3D<int> operator+ (int s,    const Vector3D<int>& v) { return Vector3D<int>( _mm_add_epi32(_mm_set1_epi32(s), v.value) ); }
+
+//! Subtraction operator ( vec - vec )
+inline Vector3D<float>  operator- (const Vector3D<float> &v1,  const Vector3D<float> &v2 ) { return Vector3D<float>( _mm_sub_ps(v1.value, v2.value) ); }
+inline Vector3D<double> operator- (const Vector3D<double> &v1, const Vector3D<double> &v2) { return Vector3D<double>( _mm256_sub_pd(v1.value, v2.value) ); }
+inline Vector3D<int>    operator- (const Vector3D<int> &v1,    const Vector3D<int> &v2   ) { return Vector3D<int>( _mm_sub_epi32(v1.value, v2.value) ); }
+
+//! Subtraction operator ( vec - scalar )
+inline Vector3D<float> operator- (const Vector3D<float>& v, float s  ) { return Vector3D<float>( _mm_sub_ps(v.value, _mm_set_ps1(s)) ); }
+inline Vector3D<float> operator- (const Vector3D<float>& v, double s ) { return Vector3D<float>( _mm_sub_ps(v.value, _mm_set_ps1((float)s)) ); }
+inline Vector3D<float> operator- (const Vector3D<float>& v, int s    ) { return Vector3D<float>( _mm_sub_ps(v.value, _mm_set_ps1((float)s)) ); }
+
+inline Vector3D<double> operator- (const Vector3D<double>& v, float s  ) { return Vector3D<double>( _mm256_sub_pd(v.value, _mm256_set1_pd((double)s)) ); }
+inline Vector3D<double> operator- (const Vector3D<double>& v, double s ) { return Vector3D<double>( _mm256_sub_pd(v.value, _mm256_set1_pd(s)) ); }
+inline Vector3D<double> operator- (const Vector3D<double>& v, int s    ) { return Vector3D<double>( _mm256_sub_pd(v.value, _mm256_set1_pd((double)s)) ); }
+
+inline Vector3D<int> operator- (const Vector3D<int>& v, float s ) { return Vector3D<int>( _mm_sub_epi32(v.value, _mm_set1_epi32((int)s)) ); }
+inline Vector3D<int> operator- (const Vector3D<int>& v, double s) { return Vector3D<int>( _mm_sub_epi32(v.value, _mm_set1_epi32((int)s)) ); }
+inline Vector3D<int> operator- (const Vector3D<int>& v, int s   ) { return Vector3D<int>( _mm_sub_epi32(v.value, _mm_set1_epi32(s)) ); }
+
+//! Subtraction operator ( scalar - vec )
+inline Vector3D<float> operator- (float s,  const Vector3D<float>& v) { return Vector3D<float>( _mm_sub_ps(_mm_set_ps1(s), v.value) ); }
+inline Vector3D<float> operator- (double s, const Vector3D<float>& v) { return Vector3D<float>( _mm_sub_ps(_mm_set_ps1((float)s), v.value) ); }
+inline Vector3D<float> operator- (int s,    const Vector3D<float>& v) { return Vector3D<float>( _mm_sub_ps(_mm_set_ps1((float)s), v.value) ); }
+
+inline Vector3D<double> operator- (float s,  const Vector3D<double>& v) { return Vector3D<double>( _mm256_sub_pd(_mm256_set1_pd((double)s), v.value) ); }
+inline Vector3D<double> operator- (double s, const Vector3D<double>& v) { return Vector3D<double>( _mm256_sub_pd(_mm256_set1_pd(s), v.value) ); }
+inline Vector3D<double> operator- (int s,    const Vector3D<double>& v) { return Vector3D<double>( _mm256_sub_pd(_mm256_set1_pd((double)s), v.value) ); }
+
+inline Vector3D<int> operator- (float s,  const Vector3D<int>& v) { return Vector3D<int>( _mm_sub_epi32(_mm_set1_epi32((int)s), v.value) ); }
+inline Vector3D<int> operator- (double s, const Vector3D<int>& v) { return Vector3D<int>( _mm_sub_epi32(_mm_set1_epi32((int)s), v.value) ); }
+inline Vector3D<int> operator- (int s,    const Vector3D<int>& v) { return Vector3D<int>( _mm_sub_epi32(_mm_set1_epi32(s), v.value) ); }
+
+//! Multiplication operator ( vec * vec )
+inline Vector3D<float> operator*  (const Vector3D<float> &v1,  const Vector3D<float> &v2 ) { return Vector3D<float>( _mm_mul_ps(v1.value, v2.value) ); }
+inline Vector3D<double> operator* (const Vector3D<double> &v1, const Vector3D<double> &v2) { return Vector3D<double>( _mm256_mul_pd(v1.value, v2.value) ); }
+inline Vector3D<int> operator*    (const Vector3D<int> &v1,    const Vector3D<int> &v2   ) { return Vector3D<int>( _mm_mul_epi32(v1.value, v2.value) ); }
+
+//! Multiplication operator ( vec * scalar )
+inline Vector3D<float> operator* (const Vector3D<float>& v, float s ) { return Vector3D<float>( _mm_mul_ps(v.value, _mm_set_ps1(s)) ); }
+inline Vector3D<float> operator* (const Vector3D<float>& v, double s) { return Vector3D<float>( _mm_mul_ps(v.value, _mm_set_ps1((float)s)) ); }
+inline Vector3D<float> operator* (const Vector3D<float>& v, int s   ) { return Vector3D<float>( _mm_mul_ps(v.value, _mm_set_ps1((float)s)) ); }
+
+inline Vector3D<double> operator* (const Vector3D<double>& v, float s ) { return Vector3D<double>( _mm256_mul_pd(v.value, _mm256_set1_pd((double)s)) ); }
+inline Vector3D<double> operator* (const Vector3D<double>& v, double s) { return Vector3D<double>( _mm256_mul_pd(v.value, _mm256_set1_pd(s)) ); }
+inline Vector3D<double> operator* (const Vector3D<double>& v, int s   ) { return Vector3D<double>( _mm256_mul_pd(v.value, _mm256_set1_pd((double)s)) ); }
+
+inline Vector3D<int> operator* (const Vector3D<int>& v, float s ) { return Vector3D<int>( _mm_mul_epi32(v.value, _mm_set1_epi32((int)s)) ); }
+inline Vector3D<int> operator* (const Vector3D<int>& v, double s) { return Vector3D<int>( _mm_mul_epi32(v.value, _mm_set1_epi32((int)s)) ); }
+inline Vector3D<int> operator* (const Vector3D<int>& v, int s   ) { return Vector3D<int>( _mm_mul_epi32(v.value, _mm_set1_epi32(s)) ); }
+
+//! Multiplication operator ( scalar * vec )
+inline Vector3D<float> operator* (float s,  const Vector3D<float>& v) { return Vector3D<float>( _mm_mul_ps(_mm_set_ps1(s), v.value) ); }
+inline Vector3D<float> operator* (double s, const Vector3D<float>& v) { return Vector3D<float>( _mm_mul_ps(_mm_set_ps1((float)s), v.value) ); }
+inline Vector3D<float> operator* (int s,    const Vector3D<float>& v) { return Vector3D<float>( _mm_mul_ps(_mm_set_ps1((float)s), v.value) ); }
+
+inline Vector3D<double> operator* (float s,  const Vector3D<double>& v) { return Vector3D<double>( _mm256_mul_pd(_mm256_set1_pd((double)s), v.value) ); }
+inline Vector3D<double> operator* (double s, const Vector3D<double>& v) { return Vector3D<double>( _mm256_mul_pd(_mm256_set1_pd(s), v.value) ); }
+inline Vector3D<double> operator* (int s,    const Vector3D<double>& v) { return Vector3D<double>( _mm256_mul_pd(_mm256_set1_pd((double)s), v.value) ); }
+
+inline Vector3D<int> operator* (float s,  const Vector3D<int>& v) { return Vector3D<int>( _mm_mul_epi32(_mm_set1_epi32((int)s), v.value) ); }
+inline Vector3D<int> operator* (double s, const Vector3D<int>& v) { return Vector3D<int>( _mm_mul_epi32(_mm_set1_epi32((int)s), v.value) ); }
+inline Vector3D<int> operator* (int s,    const Vector3D<int>& v) { return Vector3D<int>( _mm_mul_epi32(_mm_set1_epi32(s), v.value) ); }
+
+//! Division operator ( vec / vec )
+inline Vector3D<float> operator/  (const Vector3D<float> &v1,  const Vector3D<float> &v2 ) { return Vector3D<float>( _mm_div_ps(v1.value, v2.value) ); }
+inline Vector3D<double> operator/ (const Vector3D<double> &v1, const Vector3D<double> &v2) { return Vector3D<double>( _mm256_div_pd(v1.value, v2.value) ); }
+inline Vector3D<int> operator/    (const Vector3D<int> &v1,    const Vector3D<int> &v2   ) { return Vector3D<int>( _mm_castps_si128(_mm_div_ps(_mm_castsi128_ps(v1.value), _mm_castsi128_ps(v2.value))) ); }
+
+//! Division operator ( vec / scalar )
+inline Vector3D<float> operator/ (const Vector3D<float>& v, float s ) { return Vector3D<float>( _mm_div_ps(v.value, _mm_set_ps1(s)) ); }
+inline Vector3D<float> operator/ (const Vector3D<float>& v, double s) { return Vector3D<float>( _mm_div_ps(v.value, _mm_set_ps1((float)s)) ); }
+inline Vector3D<float> operator/ (const Vector3D<float>& v, int s   ) { return Vector3D<float>( _mm_div_ps(v.value, _mm_set_ps1((float)s)) ); }
+
+inline Vector3D<double> operator/ (const Vector3D<double>& v, float s ) { return Vector3D<double>( _mm256_div_pd(v.value, _mm256_set1_pd((double)s)) ); }
+inline Vector3D<double> operator/ (const Vector3D<double>& v, double s) { return Vector3D<double>( _mm256_div_pd(v.value, _mm256_set1_pd(s)) ); }
+inline Vector3D<double> operator/ (const Vector3D<double>& v, int s   ) { return Vector3D<double>( _mm256_div_pd(v.value, _mm256_set1_pd((double)s)) ); }
+
+inline Vector3D<int> operator/ (const Vector3D<int>& v, float s ) { return Vector3D<int>( _mm_castps_si128(_mm_div_ps(_mm_castsi128_ps(v.value), _mm_set_ps1(s))) ); }
+inline Vector3D<int> operator/ (const Vector3D<int>& v, double s) { return Vector3D<int>( _mm_castps_si128(_mm_div_ps(_mm_castsi128_ps(v.value), _mm_set_ps1((float)s))) ); }
+inline Vector3D<int> operator/ (const Vector3D<int>& v, int s   ) { return Vector3D<int>( _mm_castps_si128(_mm_div_ps(_mm_castsi128_ps(v.value), _mm_set_ps1((float)s))) ); }
+
+//! Division operator ( scalar / vec )
+inline Vector3D<float> operator/ (float s,  const Vector3D<float>& v) { return Vector3D<float> ( _mm_div_ps(_mm_set_ps1(s), v.value) ); }
+inline Vector3D<float> operator/ (double s, const Vector3D<float>& v) { return Vector3D<float> ( _mm_div_ps(_mm_set_ps1((float)s), v.value) ); }
+inline Vector3D<float> operator/ (int s,    const Vector3D<float>& v) { return Vector3D<float> ( _mm_div_ps(_mm_set_ps1((float)s), v.value) ); }
+
+inline Vector3D<double> operator/ (float s,  const Vector3D<double>& v) { return Vector3D<double> ( _mm256_div_pd(_mm256_set1_pd((double)s), v.value) ); }
+inline Vector3D<double> operator/ (double s, const Vector3D<double>& v) { return Vector3D<double> ( _mm256_div_pd(_mm256_set1_pd(s), v.value) ); }
+inline Vector3D<double> operator/ (int s,    const Vector3D<double>& v) { return Vector3D<double> ( _mm256_div_pd(_mm256_set1_pd((double)s), v.value) ); }
+
+inline Vector3D<int> operator/ (float s,  const Vector3D<int>& v) { return Vector3D<int> ( _mm_castps_si128(_mm_div_ps(_mm_set_ps1(s), _mm_castsi128_ps(v.value))) ); }
+inline Vector3D<int> operator/ (double s, const Vector3D<int>& v) { return Vector3D<int> ( _mm_castps_si128(_mm_div_ps(_mm_set_ps1((float)s), _mm_castsi128_ps(v.value))) ); }
+inline Vector3D<int> operator/ (int s,    const Vector3D<int>& v) { return Vector3D<int> ( _mm_castps_si128(_mm_div_ps(_mm_set_ps1((float)s), _mm_castsi128_ps(v.value))) ); }
+
+//! Comparison operator
+inline bool operator== (const Vector3D<float>& s1, const Vector3D<float>& s2) {
+	return (_mm_movemask_ps(_mm_cmpeq_ps(s1.value, s2.value)) == 0xF); 
+}
+inline bool operator== (const Vector3D<double>& s1, const Vector3D<double>& s2) {
+	return (_mm256_movemask_pd(_mm256_cmp_pd(s1.value, s2.value, _CMP_EQ_OQ)) == 0xF); 
+}
+inline bool operator== (const Vector3D<int>& s1, const Vector3D<int>& s2) {
+	return (_mm_movemask_epi8(_mm_cmpeq_epi32(s1.value, s2.value)) == 0xFFFF);
+}
+
+//! Comparison operator
+template<class S>
+inline bool operator!= (const Vector3D<S>& s1, const Vector3D<S>& s2) {
+	return !(s1 == s2);
+}
+
+//************************************************************************
+// External functions
+//************************************************************************
+
+//! Min operator
+template<class S>
+inline Vector3D<S> vmin (const Vector3D<S>& s1, const Vector3D<S>& s2) {
+	return Vector3D<S>(std::min(s1.x,s2.x), std::min(s1.y,s2.y), std::min(s1.z,s2.z));
+}
+
+//! Min operator
+template<class S, class S2>
+inline Vector3D<S> vmin (const Vector3D<S>& s1, S2 s2) {
+	return Vector3D<S>(std::min(s1.x,s2), std::min(s1.y,s2), std::min(s1.z,s2));
+}
+
+//! Min operator
+template<class S1, class S>
+inline Vector3D<S> vmin (S1 s1, const Vector3D<S>& s2) {
+	return Vector3D<S>(std::min(s1,s2.x), std::min(s1,s2.y), std::min(s1,s2.z));
+}
+
+//! Max operator
+template<class S>
+inline Vector3D<S> vmax (const Vector3D<S>& s1, const Vector3D<S>& s2) {
+	return Vector3D<S>(std::max(s1.x,s2.x), std::max(s1.y,s2.y), std::max(s1.z,s2.z));
+}
+
+//! Max operator
+template<class S, class S2>
+inline Vector3D<S> vmax (const Vector3D<S>& s1, S2 s2) {
+	return Vector3D<S>(std::max(s1.x,s2), std::max(s1.y,s2), std::max(s1.z,s2));
+}
+
+//! Max operator
+template<class S1, class S>
+inline Vector3D<S> vmax (S1 s1, const Vector3D<S>& s2) {
+	return Vector3D<S>(std::max(s1,s2.x), std::max(s1,s2.y), std::max(s1,s2.z));
+}
+
+//! Dot product
+inline float dot ( const Vector3D<float> &t, const Vector3D<float> &v ) {
+	return _mm_cvtss_f32(_mm_dp_ps(t.value, v.value, 0x71));
+}
+inline double dot ( const Vector3D<double> &t, const Vector3D<double> &v ) {
+	__m256d result = _mm256_mul_pd(t.value, v.value);
+    __m256d sum1 = _mm256_hadd_pd(result, result);
+    __m128d sum2 = _mm256_extractf128_pd(sum1, 1);
+    return _mm_cvtsd_f64(_mm_add_pd(_mm256_castpd256_pd128(sum1), sum2));
+}
+inline int dot ( const Vector3D<int> &t, const Vector3D<int> &v ) {
+	__m128i result = _mm_mullo_epi32(t.value, v.value);
+	__m128i sum = _mm_hadd_epi32(result, result);
+	return _mm_cvtsi128_si32(_mm_hadd_epi32(sum, sum));
+}
+
+//! Cross product
+inline Vector3D<float> cross ( const Vector3D<float> &t, const Vector3D<float> &v ) {
+	// Rearrange vectors for cross product calculation
+	__m128 tmp0 = _mm_shuffle_ps(t.value, t.value, _MM_SHUFFLE(3, 0, 2, 1));
+	__m128 tmp1 = _mm_shuffle_ps(v.value, v.value, _MM_SHUFFLE(3, 1, 0, 2));
+	__m128 tmp2 = _mm_shuffle_ps(t.value, t.value, _MM_SHUFFLE(3, 1, 0, 2));
+	__m128 tmp3 = _mm_shuffle_ps(v.value, v.value, _MM_SHUFFLE(3, 0, 2, 1));
+
+	// Perform the actual cross product calculation
+	return Vector3D<float>(_mm_sub_ps(_mm_mul_ps(tmp0, tmp1), _mm_mul_ps(tmp2, tmp3)));
+}
+
+inline Vector3D<double> cross ( const Vector3D<double> &t, const Vector3D<double> &v ) {
+	// Split the __m256d vectors into two __m128d vectors each
+	__m128d t_x = _mm256_extractf128_pd(t.value, 0); // Extract lower 128 bits (x components)
+	__m128d t_y = _mm256_extractf128_pd(t.value, 1); // Extract upper 128 bits (y components)
+	__m128d v_x = _mm256_extractf128_pd(v.value, 0);
+	__m128d v_y = _mm256_extractf128_pd(v.value, 1);
+
+	// Calculate the cross product for x, y, and z components
+	__m128d cross_x = _mm_sub_pd(_mm_mul_pd(t_y, v_x), _mm_mul_pd(t_x, v_y));
+
+	// Combine the results into a single __m256d vector
+	return Vector3D<double>(_mm256_insertf128_pd(_mm256_castpd128_pd256(cross_x), cross_x, 1));
+}
+
+inline Vector3D<int> cross ( const Vector3D<int> &t, const Vector3D<int> &v ) {
+	// Rearrange vectors for cross product calculation
+	__m128i tmp0 = _mm_shuffle_epi32(t.value, _MM_SHUFFLE(3, 0, 2, 1));
+	__m128i tmp1 = _mm_shuffle_epi32(v.value, _MM_SHUFFLE(3, 1, 0, 2));
+	__m128i tmp2 = _mm_shuffle_epi32(t.value, _MM_SHUFFLE(3, 1, 0, 2));
+	__m128i tmp3 = _mm_shuffle_epi32(v.value, _MM_SHUFFLE(3, 0, 2, 1));
+
+	// Perform the actual cross product calculation
+	__m128i mul1 = _mm_mullo_epi32(tmp0, tmp1);
+	__m128i mul2 = _mm_mullo_epi32(tmp2, tmp3);
+
+	return Vector3D<int>(_mm_sub_epi32(mul1, mul2));
+}
+
+//! Compute the magnitude (length) of the vector
+//! (clamps to 0 and 1 with VECTOR_EPSILON)
+inline float norm ( const Vector3D<float>& v ) {
+	float l = _mm_cvtss_f32(_mm_dp_ps(v.value, v.value, 0x71));
+	if     (        l      <= VECTOR_EPSILON*VECTOR_EPSILON ) return(0.);
+	return ( fabs ( l-1. ) <  VECTOR_EPSILON*VECTOR_EPSILON ) ? 1. : sqrt ( l );
+}
+
+inline double norm ( const Vector3D<double>& v ) {
+	// Square each component of the vector
+	__m256d squared_components = _mm256_mul_pd(v.value, v.value);
+
+	// Permute to get squared y and z components into position
+	__m256d shuffled = _mm256_shuffle_pd(squared_components, squared_components, _MM_SHUFFLE(0, 0, 0, 1));
+	__m256d squared_yz = _mm256_blend_pd(shuffled, squared_components, 0b0110);
+
+	// Add the squared components together
+	__m256d sum = _mm256_add_pd(squared_components, squared_yz);
+
+	// Sum the upper and lower halves
+	__m128d low = _mm256_castpd256_pd128(sum);
+	__m128d high = _mm256_extractf128_pd(sum, 1);
+	__m128d final_sum = _mm_add_pd(low, high);
+
+	// Extract the result as a scalar double
+	double l; // squared_length
+	_mm_store_sd(&l, final_sum);
+
+	if     (        l      <= VECTOR_EPSILON*VECTOR_EPSILON ) return(0.);
+	return ( fabs ( l-1. ) <  VECTOR_EPSILON*VECTOR_EPSILON ) ? 1. : sqrt ( l );
+}
+
+inline int norm ( const Vector3D<int>& v ) {
+	__m128i result = _mm_mullo_epi32(v.value, v.value);
+	__m128i sum = _mm_hadd_epi32(result, result);
+	int l = _mm_cvtsi128_si32(_mm_hadd_epi32(sum, sum));
+
+	if     (        l      <= VECTOR_EPSILON*VECTOR_EPSILON ) return(0.);
+	return ( fabs ( l-1. ) <  VECTOR_EPSILON*VECTOR_EPSILON ) ? 1. : sqrt ( l );
+}
+
+inline float normSquare ( const Vector3D<float>& v ) {
+	return dot(v, v);
+}
+
+inline double normSquare ( const Vector3D<double>& v ) {
+	return dot(v, v);
+}
+
+inline int normSquare ( const Vector3D<int>& v ) {
+	return dot(v, v);
+}
+
+#else /* WITHOUT SSE */
+
 //! Basic inlined vector class
 template<class S>
 class Vector3D
@@ -76,8 +858,8 @@ public:
 	//! Copy-Constructor
 	inline Vector3D ( const Vector3D<S> &v ) : x(v.x), y(v.y), z(v.z) {}
 
-        //! Copy-Constructor
-        inline Vector3D ( const int * v) : x((S)v[0]), y((S)v[1]), z((S)v[2]) {}
+	//! Copy-Constructor
+	inline Vector3D ( const int * v) : x((S)v[0]), y((S)v[1]), z((S)v[2]) {}
 
 	//! Copy-Constructor
 	inline Vector3D ( const float * v) : x((S)v[0]), y((S)v[1]), z((S)v[2]) {}
@@ -155,15 +937,15 @@ public:
 		return *this;        
 	}
 	//! Assign and div operator
-	inline const Vector3D<S>& operator/= ( S s ) {        
+	inline const Vector3D<S>& operator/= ( S s ) {
 		x /= s;
 		y /= s;
 		z /= s;
-		return *this;        
+		return *this;
 	}
 	//! Negation operator
 	inline Vector3D<S> operator- () const {
-		return Vector3D<S> (-x, -y, -z);        
+		return Vector3D<S> (-x, -y, -z);
 	}
 	
 	//! Get smallest component 
@@ -193,7 +975,7 @@ public:
 	std::string toString() const;
 	
 	//! test if nans are present
-	bool isValid() const; 
+	bool isValid() const;
 
 	//! actual values
 	union {
@@ -356,6 +1138,17 @@ inline S dot ( const Vector3D<S> &t, const Vector3D<S> &v ) {
 	return t.x*v.x + t.y*v.y + t.z*v.z;    
 }
 
+//! Outputs the object in human readable form as string
+template<class S> std::string Vector3D<S>::toString() const {
+	char buf[256];
+	snprintf ( buf,256,"[%+4.6f,%+4.6f,%+4.6f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
+	// for debugging, optionally increase precision:
+	//snprintf ( buf,256,"[%+4.16f,%+4.16f,%+4.16f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
+	return std::string ( buf );
+}
+
+template<> std::string Vector3D<int>::toString() const;
+
 //! Cross product
 template<class S>
 inline Vector3D<S> cross ( const Vector3D<S> &t, const Vector3D<S> &v ) {
@@ -364,18 +1157,6 @@ inline Vector3D<S> cross ( const Vector3D<S> &t, const Vector3D<S> &v ) {
 		( ( t.z*v.x ) - ( t.x*v.z ) ),
 		( ( t.x*v.y ) - ( t.y*v.x ) ) );
 	return cp;
-}
-
-//! Project a vector into a plane, defined by its normal
-/*! Projects a vector into a plane normal to the given vector, which must
-  have unit length. Self is modified.
-  \param v The vector to project
-  \param n The plane normal
-  \return The projected vector */
-template<class S>
-inline const Vector3D<S>& projectNormalTo ( const Vector3D<S>& v, const Vector3D<S> &n) {
-	S sprod = dot (v, n);
-	return v - n * dot(v, n);
 }
 
 //! Compute the magnitude (length) of the vector
@@ -391,6 +1172,20 @@ inline S norm ( const Vector3D<S>& v ) {
 template<class S>
 inline S normSquare ( const Vector3D<S>& v ) {
 	return v.x*v.x + v.y*v.y + v.z*v.z;
+}
+
+#endif /* SSE */
+
+//! Project a vector into a plane, defined by its normal
+/*! Projects a vector into a plane normal to the given vector, which must
+  have unit length. Self is modified.
+  \param v The vector to project
+  \param n The plane normal
+  \return The projected vector */
+template<class S>
+inline const Vector3D<S>& projectNormalTo ( const Vector3D<S>& v, const Vector3D<S> &n) {
+	S sprod = dot (v, n);
+	return v - n * dot(v, n);
 }
 
 //! compatibility, allow use of int, Real and Vec inputs with norm/normSquare
@@ -541,18 +1336,6 @@ inline Vector3D<S> refractVector ( const Vector3D<S> &t, const Vector3D<S> &norm
 	}
 	return t;
 }
-
-//! Outputs the object in human readable form as string
-template<class S> std::string Vector3D<S>::toString() const {
-	char buf[256];
-	snprintf ( buf,256,"[%+4.6f,%+4.6f,%+4.6f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
-	// for debugging, optionally increase precision:
-	//snprintf ( buf,256,"[%+4.16f,%+4.16f,%+4.16f]", ( double ) ( *this ) [0], ( double ) ( *this ) [1], ( double ) ( *this ) [2] );
-	return std::string ( buf );
-}
-
-template<> std::string Vector3D<int>::toString() const;
-
 
 //! Outputs the object in human readable form to stream
 /*! Output format [x,y,z] */
