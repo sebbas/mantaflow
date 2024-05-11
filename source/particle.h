@@ -158,7 +158,7 @@ public:
 	//! explicitly trigger compression from outside
 	void doCompress() { if ( mDeletes > mDeleteChunk) compress(); }
 	//! insert buffered positions as new particles, update additional particle data
-	void insertBufferedParticles();
+	void insertBufferedParticles(bool inRandomOrder=true);
 	//! resize only the data vector, only use if you know what you're doing, otherwise use resizeAll()
 	virtual void resize(IndexInt size) { mData.resize(size); }
 	//! resize data vector, and all pdata fields
@@ -640,7 +640,7 @@ void ParticleSystem<S>::compress() {
 
 //! insert buffered positions as new particles, update additional particle data
 template<class S>
-void ParticleSystem<S>::insertBufferedParticles() {
+void ParticleSystem<S>::insertBufferedParticles(bool inRandomOrder) {
 	// clear new flag everywhere
 	for (IndexInt i=0; i<(IndexInt)mData.size(); ++i) mData[i].flag &= ~PNEW;
 
@@ -668,19 +668,19 @@ void ParticleSystem<S>::insertBufferedParticles() {
 	RandomStream rand(globalSeed);
 	for (IndexInt i=0; i<numNewParts; ++i) {
 
-		// get random index in newBuffer vector
-		// we are inserting particles randomly so that they are sampled uniformly in the fluid region
+		// get index in newBuffer vector
+		// optional: insert particles randomly so that they are sampled uniformly in the fluid region
 		// otherwise, regions of fluid can remain completely empty once mData.size() == maxParticles is reached.
-		int randIndex = floor(rand.getReal() * mNewBufferPos.size());
+		int bufferIdx = (inRandomOrder) ? floor(rand.getReal() * mNewBufferPos.size()) : i;
 
 		// get elements from new buffers with random index
-		std::swap(mNewBufferPos[randIndex], mNewBufferPos.back());
+		std::swap(mNewBufferPos[bufferIdx], mNewBufferPos.back());
 		insertPos = mNewBufferPos.back();
 		mNewBufferPos.pop_back();
 
 		insertFlag = 0;
 		if (!mNewBufferFlag.empty()) {
-			std::swap(mNewBufferFlag[randIndex], mNewBufferFlag.back());
+			std::swap(mNewBufferFlag[bufferIdx], mNewBufferFlag.back());
 			insertFlag = mNewBufferFlag.back();
 			mNewBufferFlag.pop_back();
 		}

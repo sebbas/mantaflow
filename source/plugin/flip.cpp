@@ -30,7 +30,7 @@ namespace Manta {
 
 //! note - this is a simplified version , sampleLevelsetWithParticles has more functionality
 PYTHON() void sampleFlagsWithParticles(const FlagGrid& flags, BasicParticleSystem& parts,
-				       const int discretization, const Real randomness)
+	const int discretization, const Real randomness, const bool inRandomOrder=true)
 {
 	const bool is3D = flags.is3D();
 	const Real jlen = randomness / discretization;
@@ -51,7 +51,7 @@ PYTHON() void sampleFlagsWithParticles(const FlagGrid& flags, BasicParticleSyste
 			}
 		}
 	}
-	parts.insertBufferedParticles();
+	parts.insertBufferedParticles(inRandomOrder);
 }
 
 //! sample a level set with particles, use reset to clear the particle buffer,
@@ -59,7 +59,8 @@ PYTHON() void sampleFlagsWithParticles(const FlagGrid& flags, BasicParticleSyste
 //! be re-filled once they empty when calling sampleLevelsetWithParticles during 
 //! the main loop).
 PYTHON() void sampleLevelsetWithParticles(const LevelsetGrid& phi, const FlagGrid& flags, BasicParticleSystem& parts,
-					  const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false, const int particleFlag=-1)
+	const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false,
+	const int particleFlag=-1, const bool inRandomOrder=true)
 {
 	const bool is3D = phi.is3D();
 	const Real jlen = randomness / discretization;
@@ -93,7 +94,7 @@ PYTHON() void sampleLevelsetWithParticles(const LevelsetGrid& phi, const FlagGri
 		}
 	}
 
-	parts.insertBufferedParticles();
+	parts.insertBufferedParticles(inRandomOrder);
 }
 
 //! sample a shape with particles, use reset to clear the particle buffer,
@@ -101,8 +102,8 @@ PYTHON() void sampleLevelsetWithParticles(const LevelsetGrid& phi, const FlagGri
 //! be re-filled once they empty when calling sampleShapeWithParticles during
 //! the main loop).
 PYTHON() void sampleShapeWithParticles(const Shape& shape, const FlagGrid& flags, BasicParticleSystem& parts,
-				       const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false,
-				       const LevelsetGrid *exclude=nullptr)
+	const int discretization, const Real randomness, const bool reset=false, const bool refillEmpty=false,
+	const LevelsetGrid *exclude=nullptr, const bool inRandomOrder=true)
 {
 	const bool is3D = flags.is3D();
 	const Real jlen = randomness / discretization;
@@ -130,7 +131,7 @@ PYTHON() void sampleShapeWithParticles(const Shape& shape, const FlagGrid& flags
 		}
 	}
 
-	parts.insertBufferedParticles();
+	parts.insertBufferedParticles(inRandomOrder);
 }
 
 //! mark fluid cells and helpers
