@@ -10,8 +10,8 @@
 #
 #******************************************************************************
 
+cmake_minimum_required(VERSION 3.5)
 project (MantaFlow)
-cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
@@ -143,6 +143,7 @@ MESSAGE(STATUS "Options - "
 	" -DPYTHON_VERSION='${PYTHON_VERSION}' "
 	" -DNUMPY='${NUMPY}' "
 	" -DNOPYTHON='${NOPYTHON}' "
+	" -DEIGEN='${EIGEN}' "
 	)
 MESSAGE(STATUS "Multithreading type : ${MT_TYPE}")
 MESSAGE(STATUS "")
