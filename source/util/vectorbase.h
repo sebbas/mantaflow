@@ -165,7 +165,20 @@ public:
 	inline Vector3D<S> operator- () const {
 		return Vector3D<S> (-x, -y, -z);        
 	}
-	
+	//! Assign and modulo operator
+	inline const Vector3D<S>& operator%= ( const Vector3D<S>& v ) {
+		x %= v.x;
+		y %= v.y;
+		z %= v.z;
+		return *this;
+	}
+	//! Assign and modulo operator
+	inline const Vector3D<S>& operator%= ( S s ) {
+		x %= s;
+		y %= s;
+		z %= s;
+		return *this;
+	}
 	//! Get smallest component 
 	inline S min() const {
 	return ( x<y ) ? ( ( x<z ) ? x:z ) : ( ( y<z ) ? y:z );
@@ -296,6 +309,22 @@ inline Vector3D<S> operator/ ( const Vector3D<S>& v, S2 s ) {
 template<class S, class S2> 
 inline Vector3D<S> operator/ ( S2 s, const Vector3D<S>& v ) {
 	return Vector3D<S> ( s/v.x, s/v.y, s/v.z );
+}
+
+//! Modulo operator
+template<class S>
+inline Vector3D<S> operator% ( const Vector3D<S> &v1, const Vector3D<S> &v2 ) {
+	return Vector3D<S> ( v1.x%v2.x, v1.y%v2.y, v1.z%v2.z );
+}
+//! Modulo operator
+template<class S, class S2>
+inline Vector3D<S> operator% ( const Vector3D<S>& v, S2 s ) {
+	return Vector3D<S> ( v.x%s, v.y%s, v.z%s );
+}
+//! Modulo operator
+template<class S, class S2>
+inline Vector3D<S> operator% ( S2 s, const Vector3D<S>& v ) {
+	return Vector3D<S> ( s%v.x, s%v.y, s%v.z );
 }
 
 //! Comparison operator
