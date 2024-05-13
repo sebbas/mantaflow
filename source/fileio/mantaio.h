@@ -40,6 +40,12 @@ class BasicParticleSystem;
 template<class T> class ParticleDataImpl;
 template<class T> class MeshDataImpl;
 
+// Convenience functions to load/save multiple objects at once
+int load(const std::string& name, std::vector<PbClass*>& objects, float worldSize=1.0);
+int save(const std::string& name, std::vector<PbClass*>& objects, float worldSize=1.0,
+    bool skipDeletedParts=false, int compression=COMPRESSION_ZIP, bool precisionHalf=true,
+    int precision=PRECISION_HALF, float clip=1e-4, const Grid<Real>* clipGrid=nullptr);
+
 // Obj format
 int writeObjFile(const std::string& name, Mesh* mesh);
 int writeBobjFile(const std::string& name, Mesh* mesh);

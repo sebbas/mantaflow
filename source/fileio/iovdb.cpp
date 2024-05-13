@@ -408,7 +408,7 @@ int writeObjectsVDB(const string& filename, std::vector<PbClass*>* objects, floa
 	// Give out a warning if pData items were present but could not be saved due to missing particle system.
 	if (!pdbBuffer.empty()) {
 		for (ParticleDataBase* pdb : pdbBuffer) {
-			debMsg("writeObjectsVDB Warning: Particle data '" << pdb->getName() << "' has not been saved. It's parent particle system was needs to be given too.", 1);
+			debMsg("writeObjectsVDB Warning: Particle data '" << pdb->getName() << "' has not been saved. It's parent particle system needs to be given too.", 1);
 		}
 	}
 

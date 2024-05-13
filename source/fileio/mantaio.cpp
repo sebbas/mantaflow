@@ -13,14 +13,12 @@
 
 #include "mantaio.h"
 
-using namespace std;
-
 namespace Manta {
 
-PYTHON() int load(const string& name, std::vector<PbClass*>& objects, float worldSize=1.0) {
-	if (name.find_last_of('.') == string::npos)
+PYTHON() int load(const std::string& name, std::vector<PbClass*>& objects, float worldSize) {
+	if (name.find_last_of('.') == std::string::npos)
 		errMsg("file '" + name + "' does not have an extension");
-	string ext = name.substr(name.find_last_of('.'));
+	std::string ext = name.substr(name.find_last_of('.'));
 
 	if (ext == ".raw")
 		return readGridsRaw(name, &objects);
@@ -39,16 +37,17 @@ PYTHON() int load(const string& name, std::vector<PbClass*>& objects, float worl
 	return 0;
 }
 
-PYTHON() int save(const string& name, std::vector<PbClass*>& objects, float worldSize=1.0, bool skipDeletedParts=false, int compression=COMPRESSION_ZIP, bool precisionHalf=true, int precision=PRECISION_HALF, float clip=1e-4, const Grid<Real>* clipGrid=nullptr) {
+PYTHON() int save(const std::string& name, std::vector<PbClass*>& objects, float worldSize,
+	bool skipDeletedParts, int compression, bool precisionHalf, int precision, float clip, const Grid<Real>* clipGrid) {
 
 	if (!precisionHalf) {
 		debMsg("Warning: precisionHalf argument is deprecated. Please use precision level instead", 0);
 		precision = PRECISION_HALF; // for backwards compatibility
 	}
 
-	if (name.find_last_of('.') == string::npos)
+	if (name.find_last_of('.') == std::string::npos)
 		errMsg("file '" + name + "' does not have an extension");
-	string ext = name.substr(name.find_last_of('.'));
+	std::string ext = name.substr(name.find_last_of('.'));
 
 	if (ext == ".raw")
 		return writeGridsRaw(name, &objects);
