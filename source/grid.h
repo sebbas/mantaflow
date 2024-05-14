@@ -383,6 +383,45 @@ public:
 	PYTHON() int countCells(int flag, int bnd=0, Grid<Real>* mask=nullptr);
 };
 
+//! Special functions for IndexGrid
+PYTHON() template<class T>
+class IndexGrid : public Grid<T> {
+public:
+	PYTHON() enum IndexType { IndexLinear = 0, IndexBlock = 1 };
+	PYTHON() IndexGrid(FluidSolver* parent, int indexType, Vec3i blockSize=Vec3i(1), bool show=true, bool sparse=false);
+
+	void initialize();
+	inline Vec3i getBlockSize() const { return mBlockSize; }
+	inline Vec3i getBlockStride() const { return mBlockStride; }
+	inline IndexInt getBlockCellCnt() const { return mBlockCellCnt; }
+	inline int getIndexType() const { return mIndexType; }
+
+	inline IndexInt blockIndex(int i, int j, int k);
+
+protected:
+	Vec3i mBlockSize, mBlockStride;
+	IndexInt mBlockCellCnt;
+	int mIndexType;
+};
+
+template<> inline IndexInt IndexGrid<int>::blockIndex(int i, int j, int k)
+{
+	DEBUG_ONLY(checkIndex(i,j,k));
+	IndexInt index = (i % mBlockSize.x) + // Index in block
+		(j % mBlockSize.y) * mBlockSize.x +
+		(k % mBlockSize.z) * mBlockSize.x * mBlockSize.y +
+		mBlockCellCnt * (
+			(i / mBlockSize.x) + // Offset in i
+			(j / mBlockSize.y) * mBlockStride.x + // Offset in j
+			(k / mBlockSize.z) * mBlockStride.z); // Offset in k
+	DEBUG_ONLY(checkIndex(index));
+	return index;
+}
+
+// Python doesn't know about templates: explicit aliases needed
+PYTHON() alias IndexGrid<int>  IndexIntGrid;
+PYTHON() alias IndexGrid<Vec3> IndexVecGrid;
+
 //! helper to compute grid conversion factor between local coordinates of two grids
 inline Vec3 calcGridSizeFactor(Vec3i s1, Vec3i s2) {
 	return Vec3( Real(s1[0])/s2[0], Real(s1[1])/s2[1], Real(s1[2])/s2[2] );

@@ -40,6 +40,10 @@ TypeOutflow  = 16
 TypeStick    = 64
 TypeReserved = 256
 
+# index grid types
+IndexLinear = 0
+IndexBlock  = 1
+
 # integration mode
 IntEuler = 0
 IntRK2   = 1

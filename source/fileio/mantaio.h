@@ -33,6 +33,7 @@ namespace Manta {
 // Forward declations
 class Mesh;
 class FlagGrid;
+template<class T> class IndexGrid;
 class GridBase;
 template<class T> class Grid;
 template<class T> class Grid4d;

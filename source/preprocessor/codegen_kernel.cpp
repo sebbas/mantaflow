@@ -304,6 +304,7 @@ const std::string gGridNames[] = {
 	std::string("MACGrid"),
 	std::string("LevelsetGrid"),
 	std::string("FlagGrid"),
+	std::string("IndexGrid"),
 	std::string("Grid4d") };
 const std::string gGrid4dNames[] = {
 	std::string("Grid4d") };
@@ -314,7 +315,7 @@ static bool isGridCheck(const std::string& type, const std::string* gridNames, i
 	return false;
 }
 bool isGridType(const std::string& type) { 
-	return isGridCheck(type, gGridNames, 5);
+	return isGridCheck(type, gGridNames, 6);
 }
 bool isGrid4dType(const std::string& type) { 
 	return isGridCheck(type, gGrid4dNames, 1);

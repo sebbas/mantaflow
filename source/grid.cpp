@@ -921,4 +921,66 @@ template class Grid<int>;
 template class Grid<Real>;
 template class Grid<Vec3>;
 
+// IndexGrid specials
+
+template<class T>
+IndexGrid<T>::IndexGrid(FluidSolver* parent, int indexType, Vec3i blockSize, bool show, bool sparse)
+	: Grid<T>(parent, show, sparse), mBlockSize(blockSize), mIndexType(indexType)
+{
+	mBlockSize.z = (parent->is2D()) ? 1 : mBlockSize.z;
+	const Vec3i gridSize = parent->getGridSize();
+	assertMsg((gridSize%mBlockSize)==Vec3i(0), "Block size is not compatible with grid size");
+
+	mBlockStride.x = (gridSize.x / blockSize.x);
+	mBlockStride.y = (gridSize.y / blockSize.y);
+	mBlockStride.z = mBlockStride.x * mBlockStride.y;
+	mBlockCellCnt = mBlockSize.x * mBlockSize.y * mBlockSize.z;
+
+	// Populate grid cells with indices based on index type
+	this->initialize();
+}
+
+KERNEL() void knSetIndicesInt(IndexGrid<int>& target)
+{
+	if (target.getIndexType() == IndexGrid<int>::IndexLinear) {
+		target(i,j,k) = target.index(i, j, k);
+	} else if (target.getIndexType() == IndexGrid<int>::IndexBlock) {
+		target(i,j,k) = target.blockIndex(i, j, k);
+	} else {
+		debMsg("Invalid IndexGrid index type", 1);
+	}
+}
+KERNEL() void knSetIndicesVec(IndexGrid<Vec3>& target, IndexGrid<int>* blockIdxGrid=nullptr)
+{
+	if (target.getIndexType() == IndexGrid<Vec3>::IndexLinear) {
+		target(i,j,k) = Vec3(i,j,k);
+	} else if (target.getIndexType() == IndexGrid<Vec3>::IndexBlock) {
+		IndexInt bidx = (*blockIdxGrid)(i,j,k);
+		target(bidx) = Vec3(i,j,k);
+	} else {
+		debMsg("Invalid IndexGrid index type", 1);
+	}
+}
+
+template<> void IndexGrid<int>::initialize()
+{
+	knSetIndicesInt(*this);
+}
+
+template<> void IndexGrid<Vec3>::initialize()
+{
+	IndexGrid<int>* blockIdxGrid = nullptr;
+	if (this->getIndexType() == IndexGrid<Vec3>::IndexBlock) {
+	}
+	blockIdxGrid = new IndexGrid<int>(this->getParent(), IndexGrid<int>::IndexBlock, this->getBlockSize());
+	knSetIndicesVec(*this, blockIdxGrid);
+	if (blockIdxGrid) {
+		delete blockIdxGrid;
+	}
+}
+
+// explicit instantiation
+template class IndexGrid<int>;
+template class IndexGrid<Vec3>;
+
 } //namespace
