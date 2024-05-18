@@ -114,7 +114,7 @@ public:
 	
 	PYTHON() void setBackgroundMesh(Mesh* m);
 	PYTHON() void show(bool twoD=false);
-	PYTHON() void update();
+	PYTHON() void update(int frame=-1, float timetotal=-1.0);
 	PYTHON() void pause();
 	PYTHON() PbClass* addControl(PbType t);
 	PYTHON() void screenshot(std::string filename);
