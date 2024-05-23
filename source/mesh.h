@@ -359,7 +359,7 @@ public:
 	PYTHON() int load(const std::string name);
 
 	//! get data pointer of mesh data
-	PYTHON() std::string getDataPointer();
+	std::vector<T>* getDataPointer();
 protected:
 	//! data storage
 	std::vector<T> mData;

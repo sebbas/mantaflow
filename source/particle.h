@@ -236,7 +236,7 @@ public:
 	PYTHON() void printParts(IndexInt start=-1, IndexInt stop=-1, bool printIndex=false);
 
 	//! get data pointer of particle data
-	PYTHON() std::string getDataPointer();
+	std::vector<BasicParticleData>* getDataPointer();
 };
 
 
@@ -388,7 +388,7 @@ public:
 	PYTHON() int load(const std::string name);
 
 	//! get data pointer of particle data
-	PYTHON() std::string getDataPointer();
+	std::vector<T>* getDataPointer();
 protected:
 	//! data storage
 	std::vector<T> mData; 

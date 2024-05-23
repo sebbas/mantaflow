@@ -225,7 +225,7 @@ public:
 	PYTHON() void setBoundNeumann(int boundaryWidth=1);
 
 	//! get data pointer of grid
-	PYTHON() std::string getDataPointer();
+	T* getDataPointer();
 
 	//! debugging helper, print grid from python. skip boundary of width bnd
 	PYTHON() void printGrid(int zSlice=-1,  bool printIndex=false, int bnd=1); 

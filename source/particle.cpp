@@ -262,10 +262,8 @@ void BasicParticleSystem::printParts(IndexInt start, IndexInt stop, bool printIn
 	debMsg( sstr.str() , 1 );
 }
 
-std::string BasicParticleSystem::getDataPointer() {
-	std::ostringstream out;
-	out << &mData;
-	return out.str();
+ std::vector<BasicParticleData>* BasicParticleSystem::getDataPointer() {
+	return &mData;
 }
 
 void BasicParticleSystem::readParticles(BasicParticleSystem* from) {
@@ -787,10 +785,8 @@ void ParticleDataImpl<Matrix2x2f>::printPdata(IndexInt start, IndexInt stop, boo
 	debMsg( sstr.str() , 1 );
 }
 
-template<class T> std::string ParticleDataImpl<T>::getDataPointer() {
-	std::ostringstream out;
-	out << &mData;
-	return out.str();
+template<class T> std::vector<T>* ParticleDataImpl<T>::getDataPointer() {
+	return &mData;
 }
 
 // specials for vec3

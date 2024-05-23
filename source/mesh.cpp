@@ -1324,10 +1324,8 @@ void MeshDataImpl<T>::printMdata(IndexInt start, IndexInt stop, bool printIndex)
 	}
 	debMsg( sstr.str() , 1 );
 }
-template<class T> std::string MeshDataImpl<T>::getDataPointer() {
-	std::ostringstream out;
-	out << &mData;
-	return out.str();
+template<class T> std::vector<T>* MeshDataImpl<T>::getDataPointer() {
+	return &mData;
 }
 
 // specials for vec3

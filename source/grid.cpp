@@ -347,10 +347,8 @@ template<> Real Grid<int>::getMaxAbs() const {
 	int amax = CompMaxInt (*this);
 	return max( fabs((Real)amin), fabs((Real)amax));
 }
-template<class T> std::string Grid<T>::getDataPointer() {
-	std::ostringstream out;
-	out << mData ;
-	return out.str();
+template<class T> T* Grid<T>::getDataPointer() {
+	return mData;
 }
 
 // L1 / L2 functions
