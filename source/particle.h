@@ -20,6 +20,8 @@
 #include "vectorbase.h"
 #include "integrator.h"
 #include "randomstream.h"
+
+using namespace std;
 namespace Manta {
 
 // fwd decl
@@ -154,6 +156,10 @@ public:
 	PYTHON() void setPosPdata(const ParticleDataImpl<Vec3>& source);
 	//! transform coordinate system from one grid size to another (usually upon load)
 	void transformPositions( Vec3i dimOld, Vec3i dimNew );
+	//! find minimum particle position
+	Vec3 getPosMin();
+	//! find maximum particle position
+	Vec3 getPosMax();
 
 	//! explicitly trigger compression from outside
 	void doCompress() { if ( mDeletes > mDeleteChunk) compress(); }
@@ -457,6 +463,42 @@ void ParticleSystem<S>::transformPositions( Vec3i dimOld, Vec3i dimNew )
 	for(IndexInt i=0; i<(IndexInt)this->size(); ++i) {
 		this->setPos(i, this->getPos(i) * factor );
 	}
+}
+
+template<typename T> KERNEL(pts, reduce=min)
+returns(Real x=std::numeric_limits<Real>::max())
+returns(Real y=std::numeric_limits<Real>::max())
+returns(Real z=std::numeric_limits<Real>::max())
+void KnCompPos_Min(const ParticleSystem<T>& pp)
+{
+	Vec3 pos = pp.getPos(idx);
+	if (pos.x < x) x = pos.x;
+	if (pos.y < y) y = pos.y;
+	if (pos.z < z) z = pos.z;
+}
+template<typename T>
+Vec3 ParticleSystem<T>::getPosMin()
+{
+	KnCompPos_Min<T> minVals(*this);
+	return Vec3(minVals.x, minVals.y, minVals.z);
+}
+
+template<typename T> KERNEL(pts, reduce=max)
+returns(Real x=-std::numeric_limits<Real>::max())
+returns(Real y=-std::numeric_limits<Real>::max())
+returns(Real z=-std::numeric_limits<Real>::max())
+void KnCompPos_Max(const ParticleSystem<T>& pp)
+{
+	Vec3 pos = pp.getPos(idx);
+	if (pos.x > x) x = pos.x;
+	if (pos.y > y) y = pos.y;
+	if (pos.z > z) z = pos.z;
+}
+template<typename T>
+Vec3 ParticleSystem<T>::getPosMax()
+{
+	KnCompPos_Max<T> maxVals(*this);
+	return Vec3(maxVals.x, maxVals.y, maxVals.z);
 }
 
 // check for deletion/invalid position, otherwise return velocity
