@@ -29,7 +29,16 @@ s.updateGui = False
 
 timings = Timings()
 
-gravity   = vec3(0,-2e3,0)
+# converts world gravity to domain gravity
+def accelerationToManta(domainRes, worldAcc, worldSize):
+	lenFactor = (domainRes / worldSize)
+	frameLengthDefault = 0.1
+	fpsDefault = 25.0
+	timeFactor = ((1/fpsDefault) * (1/frameLengthDefault)) # dt is 0.1 at 25fps
+	# e.g. -9.81 m/s^2 * (200 cell / 4 meter) * ((1 s / 25 frame) * (1 frame / 0.1 step))^2 = -78.48 cell/step^2
+	return worldAcc * lenFactor * timeFactor**2
+
+gravity   = vec3(0, accelerationToManta(res, -9.81, 1), 0) # gravity and domain size in world units
 hardening = 10.0 # Hardening factor
 E         = 1e4 # Young's modulus
 nu        = 0.2 # Poisson ratio
