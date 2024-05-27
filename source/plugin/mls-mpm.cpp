@@ -248,69 +248,69 @@ PYTHON() void mpmMapPartsToGrid3D(
 		pvel, detDeformationGrad, deformationGrad, affineMomentum, rotation, hardening, E, nu, pmass, pvol, is3D);
 }
 
-KERNEL(bnd=0) void KnMpmUpdateGrid(
-	const FlagGrid& flags, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass, const MACGrid* obvel,
-	MACGrid* velTmp0, MACGrid* velTmp1, MACGrid* velTmp2, Grid<Real>* massTmp0, Grid<Real>* massTmp1, Grid<Real>* massTmp2)
+KERNEL(idx, bnd=0, reduce=max) returns(Real maxVel=-std::numeric_limits<Real>::max())
+Real KnMpmUpdateGrid(
+	const FlagGrid& flags, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass, const Grid<Real>& phiObs,
+	const MACGrid& fractions, const Grid<Vec3>& blockIjkGrid, const Grid<int>& blockIdxGrid, const MACGrid* obvel,
+	MACGrid* velTmp0, MACGrid* velTmp1, MACGrid* velTmp2, Grid<Real>* massTmp0, Grid<Real>* massTmp1, Grid<Real>* massTmp2, int boundaryCondition)
 {
 	const bool withKernelHelper = velTmp0 && massTmp0 && velTmp1 && massTmp1 && velTmp2 && massTmp2;
-	const IndexInt idx = flags.index(i,j,k);
 
 	// No grid updates needed in cells with no mass
 	if (withKernelHelper && (*massTmp0)[idx] <= 0 && (*massTmp1)[idx] <= 0 && (*massTmp2)[idx] <= 0) return;
 	if (!withKernelHelper && mass[idx] <= 0) return;
 
+	const Real dt = flags.getParent()->getDt();
+
 	// If using kernel helper grids, add them to global vel and mass grids
 	if (withKernelHelper) {
-		vel[idx]  = (*velTmp0)[idx]  + (*velTmp1)[idx]  + (*velTmp2)[idx];
-		mass[idx] = (*massTmp0)[idx] + (*massTmp1)[idx] + (*massTmp2)[idx];
+		// Normalize velocity by mass, then add velocity update
+		vel[idx] = ((*velTmp0)[idx] + (*velTmp1)[idx]  + (*velTmp2)[idx]) /
+					((*massTmp0)[idx] + (*massTmp1)[idx] + (*massTmp2)[idx]) + dt * gravity;
 
 		// Vel and mass buffers not needed anymore, clear here, is faster than grid.clear()
 		if ((*massTmp0)[idx] > 0) { (*velTmp0)[idx] = Vec3(0.); (*massTmp0)[idx] = 0.; }
 		if ((*massTmp1)[idx] > 0) { (*velTmp1)[idx] = Vec3(0.); (*massTmp1)[idx] = 0.; }
 		if ((*massTmp2)[idx] > 0) { (*velTmp2)[idx] = Vec3(0.); (*massTmp2)[idx] = 0.; }
 	}
-
-	// Normalize by mass
-	vel[idx] /= mass[idx];
-
-	// Velocity update in grid
-	const Real dt = flags.getParent()->getDt();
-	vel[idx] += dt * gravity;
-
-	// Handle behavior at boundaries / obstacles (similar to setWallBcs())
-	const bool curObs = flags.isObstacle(i,j,k);
-	const bool iObs = flags.isObstacle(i-1,j,k);
-	const bool jObs = flags.isObstacle(i,j-1,k);
-	const bool kObs = flags.isObstacle(i,j,k-1);
-	// In most cases, we can return early though
-	if (!(curObs || iObs || jObs || (vel.is3D() && kObs))) return;
-
-	const bool iFluid = flags.isFluid(i-1,j,k);
-	const bool jFluid = flags.isFluid(i,j-1,k);
-	const bool kFluid = flags.isFluid(i,j,k-1);
-
-	Vec3 bcsVel(0.,0.,0.);
-	if (obvel) {
-		bcsVel.x = (*obvel)[idx].x;
-		bcsVel.y = (*obvel)[idx].y;
-		if((*obvel).is3D()) bcsVel.z = (*obvel)[idx].z;
+	else {
+		vel[idx] = (vel[idx] / mass[idx]) + dt * gravity;
 	}
-	if (i>0 && iObs)			 { vel[idx].x = bcsVel.x; mass[idx] = 0.; }
-	if (i>0 && curObs && iFluid) { vel[idx].x = bcsVel.x; mass[idx] = 0.; }
-	if (j>0 && jObs)			 { vel[idx].y = bcsVel.y; mass[idx] = 0.; }
-	if (j>0 && curObs && jFluid) { vel[idx].y = bcsVel.y; mass[idx] = 0.; }
-	if(!vel.is3D())				 { vel[idx].z = 0; }
-	else {  if (k>0 && kObs)			 { vel[idx].z = bcsVel.z; mass[idx] = 0.; }
-			if (k>0 && curObs && kFluid) { vel[idx].z = bcsVel.z; mass[idx] = 0.; }
+
+	// Keep track of maximum velocity, needed for adaptive time-stepping
+	const Real s = normSquare(vel[idx]);
+	if (s > maxVel) maxVel = s;
+
+	const int i = blockIjkGrid[idx].x, j = blockIjkGrid[idx].y, k = blockIjkGrid[idx].z;
+
+	// Boundary condition
+	if (fractions(i,j,k).x < 1 || fractions(i,j,k).y < 1 || (phiObs.is3D() && fractions(i,j,k).z < 1)) {
+		// Normal velocity contribution: Vec3 velN = dot(vel[idx], dphi) * dphi;
+		// Tangential velocity contribution: Vec3 velT = vel[idx] - velN;
+		if (boundaryCondition == 0) { // separate
+			Vec3 dphi = getGradient(phiObs, i, j, k);
+			normalize(dphi);
+			Real normal = dot(vel[idx], dphi);
+			vel[idx] -= dphi * std::min(normal, Real(0.));
+		} else if (boundaryCondition == 1) { // no-slip: zero in normal and tangential dir
+			vel[idx] = Vec3(0.);
+		} else if (boundaryCondition == 2) { // free-slip: tangential flows only
+			Vec3 dphi = getGradient(phiObs, i, j, k);
+			normalize(dphi);
+			vel[idx] -= dot(vel[idx], dphi) * dphi;
+		}
 	}
 }
 
-PYTHON() void mpmUpdateGrid(
-	const FlagGrid& flags, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass,
-	const MACGrid* obvel=nullptr, MACGrid* velTmp0=nullptr, MACGrid* velTmp1=nullptr, MACGrid* velTmp2=nullptr,
-	Grid<Real>* massTmp0=nullptr, Grid<Real>* massTmp1=nullptr, Grid<Real>* massTmp2=nullptr)
+PYTHON() Real mpmUpdateGrid(
+	const FlagGrid& flags, const Vec3& gravity, MACGrid& vel, Grid<Real>& mass, const Grid<Real>& phiObs,
+	const MACGrid& fractions, const Grid<Vec3>& blockIjkGrid, const Grid<int>& blockIdxGrid, const MACGrid* obvel,
+	MACGrid* velTmp0, MACGrid* velTmp1, MACGrid* velTmp2, Grid<Real>* massTmp0, Grid<Real>* massTmp1, Grid<Real>* massTmp2, int boundaryCondition)
 {
-	KnMpmUpdateGrid(flags, gravity, vel, mass, obvel, velTmp0, velTmp1, velTmp2, massTmp0, massTmp1, massTmp2);
+	unusedParameter(obvel);
+	Real maxVel = KnMpmUpdateGrid(flags, gravity, vel, mass, phiObs, fractions, blockIjkGrid, blockIdxGrid, obvel,
+		velTmp0, velTmp1, velTmp2, massTmp0, massTmp1, massTmp2, boundaryCondition);
+	return sqrt(maxVel);
 }
 
 KERNEL(pts, bnd=0) template<class T> void knMpmMapGridToParts(

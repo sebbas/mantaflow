@@ -7,25 +7,29 @@ import time
 # solver params
 dim = 2
 particleNumber = 2
-res = 200
+frames = 10000
+res = 80
 withMesh = 1
 withObs = 1
+withScreenshot = 0
 withPseudo3D = 0 # simulate with 3D grids but 2D MPM functions
 withParallelParts = 1 # enable parallel "parts-to-grid" mapping (noticeably faster when using lots of particles)
 
 gs = vec3(res,res,res/4)
 if (dim==2):
 	gs.z=1
-	particleNumber = 3 # use more particles in 2d
+boundaryCondition = 0 # 0: separate, 1: stick, 2: free-slip
 
-# Gui solver - only used to update GUI
-sGui = Solver(name='gui', gridSize = gs, dim=dim)
-sGui.timestep = 1e-2
-
-# MPM solver - uses small timestep and thus not used for GUI updates
-s = Solver(name='main', gridSize = gs, dim=dim)
-s.timestep = 1e-4
-s.updateGui = False
+s = Solver(name='main', gridSize=gs, dim=dim)
+# Adaptive time stepping
+fps = 200
+timescale = 1
+s.frameLength = 0.1 * (25.0 / fps) * timescale # length of one frame (in "world time")
+s.cfl         = 0.05
+s.timestep    = s.frameLength
+s.timestepMin = 1e-5
+s.timestepMax = 5e-4
+s.updateGui = False  # using gui.update() to refresh GUI (i.e. only update once per frame), is faster this way
 
 timings = Timings()
 
@@ -89,6 +93,7 @@ phiParts = s.create(LevelsetGrid)
 
 # obstacle
 phiInit  = s.create(LevelsetGrid)
+fractions = s.create(MACGrid)
 phiInit.setConst(999.)
 phiObs   = s.create(LevelsetGrid)
 
@@ -115,8 +120,11 @@ if withObs:
 flags.updateFromLevelset(phiInit)
 phiInit.subtract(phiObs)
 
-sampleLevelsetWithParticles(phi=phiInit, flags=flags, parts=pp, discretization=particleNumber, randomness=0.1)
-setObstacleFlags(flags=flags, phiObs=phiObs)
+sampleLevelsetWithParticles(phi=phiInit, flags=flags, parts=pp, discretization=particleNumber,
+	randomness=.0, reset=false, refillEmpty=false, particleFlag=-1, inRandomOrder=True)
+
+updateFractions(flags=flags, phiObs=phiObs, fractions=fractions, boundaryWidth=boundaryWidth)
+setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=boundaryWidth, fractions=fractions, phiOut=None, phiIn=None)
 
 # Initialize particle data structures (after sampling particles!)
 Jp.setConst(1.0) # initialize with 0.0 for more rigidity
@@ -133,12 +141,19 @@ if (GUI):
 	gui.show()
 	gui.pause()
 
-# main loop
-startTime = time.time()
-runtime = int(1e5) if (dim == 2 or withPseudo3D) else int(5e2)
+lastFrame = -1
+maxVel = 0
 
-for t in range(runtime):
-	#mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
+# Index grids that contain IndexInt's or ijk's in a blocked layout
+blockIdxGrid = s.create(IndexIntGrid, indexType=IndexBlock, blockSize=bs)
+blockIjkGrid = s.create(IndexVecGrid, indexType=IndexBlock, blockSize=bs)
+
+startTime = time.time()
+
+# main loop
+while s.frame < frames:
+	if (maxVel > 0): s.adaptTimestep(maxVel)
+	#mantaMsg('\nFrame %i, simulation time %f, timestep %f' % (s.frame, s.timeTotal, s.timestep))
 
 	if (dim == 2 or withPseudo3D):
 		polarDecomposition2D(A=F, U=R, P=S)
@@ -151,8 +166,11 @@ for t in range(runtime):
 			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
 			massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 
-	mpmUpdateGrid(flags=flags, gravity=gravity, vel=vel, mass=mass, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
-		massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2)
+	maxVel = mpmUpdateGrid(flags=flags, gravity=gravity, vel=vel, mass=mass, phiObs=phiObs, fractions=fractions,
+		blockIjkGrid=blockIjkGrid, blockIdxGrid=blockIdxGrid,
+		velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
+		massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2,
+		obvel=None, boundaryCondition=boundaryCondition)
 
 	if (dim == 2 or withPseudo3D):
 		mpmMapGridToParts2D(pp=pp, vel=vel, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
@@ -165,17 +183,20 @@ for t in range(runtime):
 
 	s.step()
 
-	# Gui uses larger timestep
-	if (t % int(sGui.timestep / s.timestep) == 0):
-		if 0:
-			gui.screenshot('test_%02d_imgs/test_00_%04d.png' % (int(test), t));
-		if withMesh and dim==3 and t>2000:
+	# Update GUI and mesh only once per frame
+	if (lastFrame != s.frame):
+		if withMesh and dim==3:
 			gridParticleIndex(parts=pp , flags=flags, indexSys=pindex, index=gpi, counter=counter)
 			#unionParticleLevelset(pp, pindex, flags, gpi, phiParts)
 			improvedParticleLevelset(pp, pindex, flags, gpi, phiParts , 1 , 1, 1)
 			phiParts.createMesh(mesh)
-		sGui.step()
+		if (GUI):
+			gui.update(s.frame, s.timeTotal)
+			if withScreenshot:
+				mantaMsg('\nScreenshot at frame %i, simulation time %f, timestep %f' % (s.frame, s.timeTotal, s.timestep))
+				gui.screenshot('imgs_%02d/mpm_%02d_%04d.png' % (int(5), int(5), s.frame))
 
 	timings.display()
+	lastFrame = s.frame
 
 print('Time taken : %s seconds ---' % (time.time() - startTime))
