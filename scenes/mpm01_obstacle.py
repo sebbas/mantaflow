@@ -14,9 +14,12 @@ withObs = 1
 withScreenshot = 0
 withPseudo3D = 0 # simulate with 3D grids but 2D MPM functions
 withParallelParts = 1 # enable parallel "parts-to-grid" mapping (noticeably faster when using lots of particles)
+withBlockGrid = 1
 
-gs = vec3(res,res,res/4)
+gs = vec3(res,res,res)
+bs = vec3(4) if (withBlockGrid) else vec3(1)
 if (dim==2):
+	bs.z=1
 	gs.z=1
 boundaryCondition = 0 # 0: separate, 1: stick, 2: free-slip
 
@@ -46,7 +49,7 @@ gravity   = vec3(0, accelerationToManta(res, -9.81, 1), 0) # gravity and domain 
 hardening = 10.0 # Hardening factor
 E         = 1e4 # Young's modulus
 nu        = 0.2 # Poisson ratio
-pmass     = 1.0 # Particle mass
+pmass     = 2.0 # Particle mass
 pvol      = 1.0 # Particle volume
 plastic   = bool(1) # plastic=0 behave more like soft body
 
@@ -157,12 +160,14 @@ while s.frame < frames:
 
 	if (dim == 2 or withPseudo3D):
 		polarDecomposition2D(A=F, U=R, P=S)
-		mpmMapPartsToGrid2D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapPartsToGrid2D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, blockIdxGrid=blockIdxGrid,
+			detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
 			massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 	else:
 		polarDecomposition3D(A=F, U=R, P=S)
-		mpmMapPartsToGrid3D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapPartsToGrid3D(vel=vel, mass=mass, flags=flags, pp=pp, pvel=pVel, blockIdxGrid=blockIdxGrid,
+			detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, rotation=R, kernelGrid=kernelGrid, velTmp0=velTmp0, velTmp1=velTmp1, velTmp2=velTmp2,
 			massTmp0=massTmp0, massTmp1=massTmp1, massTmp2=massTmp2, hardening=hardening, E=E, nu=nu, pmass=pmass, pvol=pvol)
 
@@ -173,22 +178,19 @@ while s.frame < frames:
 		obvel=None, boundaryCondition=boundaryCondition)
 
 	if (dim == 2 or withPseudo3D):
-		mpmMapGridToParts2D(pp=pp, vel=vel, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapGridToParts2D(pp=pp, vel=vel, pvel=pVel, flags=flags, phiObs=phiObs, blockIdxGrid=blockIdxGrid, detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, plastic=plastic)
 	else:
-		mpmMapGridToParts3D(pp=pp, vel=vel, flags=flags, pvel=pVel, detDeformationGrad=Jp, deformationGrad=F,
+		mpmMapGridToParts3D(pp=pp, vel=vel, pvel=pVel, flags=flags, phiObs=phiObs, blockIdxGrid=blockIdxGrid, detDeformationGrad=Jp, deformationGrad=F,
 			affineMomentum=C, plastic=plastic)
-
-	pushOutofObs(parts=pp, flags=flags, phiObs=phiObs, shift=2)
-
 	s.step()
 
 	# Update GUI and mesh only once per frame
 	if (lastFrame != s.frame):
 		if withMesh and dim==3:
 			gridParticleIndex(parts=pp , flags=flags, indexSys=pindex, index=gpi, counter=counter)
-			#unionParticleLevelset(pp, pindex, flags, gpi, phiParts)
-			improvedParticleLevelset(pp, pindex, flags, gpi, phiParts , 1 , 1, 1)
+			#unionParticleLevelset(pp, pindex, flags, gpi, phiParts) # faster but less accurate
+			improvedParticleLevelset(pp, pindex, flags, gpi, phiParts , 1 , 1, 1, 0.4, 3.5, None, 0)
 			phiParts.createMesh(mesh)
 		if (GUI):
 			gui.update(s.frame, s.timeTotal)
