@@ -109,7 +109,10 @@ C = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3)
 R = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3) # rotation mat from F=RS
 S = pp.create(PdataMat2) if (dim == 2 or withPseudo3D) else pp.create(PdataMat3) # scale mat from F=RS
 
-flags.initDomain(boundaryWidth=0, phiWalls=phiObs)
+# outflow at domain boundaries?
+outflowCondition = 'xX' # define open walls
+boundaryWidth = 2 # need space at boundaries for neighbor search
+flags.initDomain(boundaryWidth=boundaryWidth-1, phiWalls=phiObs, outflow=outflowCondition)
 
 # Setup fluid and obstacle geometries
 fluidbox  = Box(parent=s, p0=gs*vec3(0.45,0.75,0.4), p1=gs*vec3(0.65,0.95,0.6))
