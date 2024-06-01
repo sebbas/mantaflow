@@ -379,8 +379,23 @@ KERNEL(pts, bnd=0) template<class T> void knMpmMapGridToParts(
 	pvel[idx] = pvelNew;
 	affineMomentum[idx] = affineMomentumNew;
 
-	// Advection
-	pp[idx].pos += dt * pvel[idx];
+	// Advection (do not advect deleted particles)
+	if (pp.isActive(idx)) {
+		// Push out of obs if new pos is in obs
+		Vec3 posNext = pp[idx].pos + dt * pvel[idx];
+		Vec3i p = toVec3i(posNext);
+		if (!flags.isInBounds(p)) { // New pos out of domain, push with current pos
+			posNext = pp[idx].pos;
+			p = toVec3i(posNext);
+		}
+		Real v = phiObs.getInterpolated(posNext);
+		if (v < 0.) {
+			Vec3 grad = getGradient(phiObs, p.x, p.y, p.z);
+			pp[idx].pos += grad * (-v);
+		}
+		// Advection
+		pp[idx].pos += dt * pvel[idx];
+	}
 
 	// Deformation update
 	T F = (T(Vec3(1.)) + dt * affineMomentum[idx]) * deformationGrad[idx];
