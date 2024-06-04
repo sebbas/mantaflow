@@ -115,13 +115,53 @@ boundaryWidth = 2 # need space at boundaries for neighbor search
 flags.initDomain(boundaryWidth=boundaryWidth-1, phiWalls=phiObs, outflow=outflowCondition)
 
 # Setup fluid and obstacle geometries
-fluidbox  = Box(parent=s, p0=gs*vec3(0.45,0.75,0.4), p1=gs*vec3(0.65,0.95,0.6))
-fluidbox2 = Box(parent=s, p0=gs*vec3(0.4,0.5,0.4), p1=gs*vec3(0.6,0.7,0.6))
-phiInit = fluidbox.computeLevelset()
-phiInit.join(fluidbox2.computeLevelset())
+scene = 5 # center obstacle
+#scene = 6 # stairs obstacle
+
+fluid1 = None
+fluid2 = None
+
+if scene == 5:
+	fluid1 = Box(parent=s, p0=gs*vec3(0.4,0.75,0.4), p1=gs*vec3(0.6,0.95,0.6))
+	#fluid1 = Sphere(parent=s, center=gs*vec3(0.5,0.8,0.5), radius=res*0.12)
+	phiInit = fluid1.computeLevelset()
+
+if scene == 6:
+	fluid1 = Sphere(parent=s, center=gs*vec3(0.15,0.85,0.5), radius=res*0.1)
+	fluid2 = Sphere(parent=s, center=gs*vec3(0.35,0.65,0.5), radius=res*0.1)
+	phiInit = fluid1.computeLevelset()
+	if fluid2: phiInit.join(fluid2.computeLevelset())
+
 if withObs:
-	obs = Box(parent=s, p0=gs*vec3(0.49,0,0), p1=gs*vec3(0.51,0.4,1))
-	phiObs.join(obs.computeLevelset())
+	obs1 = None
+	obs2 = None
+	obs3 = None
+	obs4 = None
+	obs5 = None
+	obs6 = None
+	obs7 = None
+	if scene == 5:
+		obs1 = Box(parent=s, p0=gs*vec3(0.47,0,0), p1=gs*vec3(0.53,0.4,1))
+		#obs1 = Sphere(parent=s, center=gs*vec3(0.5,0.1,0.5), radius=res*0.2)
+
+	if scene == 6:
+		obs1 = Box(parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.1,0.7,1))
+		obs2 = Box(parent=s, p0=gs*vec3(0.1,0,0), p1=gs*vec3(0.2,0.6,1))
+		obs3 = Box(parent=s, p0=gs*vec3(0.2,0,0), p1=gs*vec3(0.3,0.5,1))
+		obs4 = Box(parent=s, p0=gs*vec3(0.3,0,0), p1=gs*vec3(0.4,0.4,1))
+		obs5 = Box(parent=s, p0=gs*vec3(0.4,0,0), p1=gs*vec3(0.5,0.3,1))
+		obs6 = Box(parent=s, p0=gs*vec3(0.5,0,0), p1=gs*vec3(0.6,0.2,1))
+		obs7 = Box(parent=s, p0=gs*vec3(0.6,0,0), p1=gs*vec3(0.7,0.1,1))
+
+	phiObs.join(obs1.computeLevelset())
+	if obs2: phiObs.join(obs2.computeLevelset())
+	if obs3: phiObs.join(obs3.computeLevelset())
+	if obs4: phiObs.join(obs4.computeLevelset())
+	if obs5: phiObs.join(obs5.computeLevelset())
+	if obs6: phiObs.join(obs6.computeLevelset())
+	if obs7: phiObs.join(obs7.computeLevelset())
+	extrapolateLsSimple(phi=phiObs, distance=4, inside=True)
+	extrapolateLsSimple(phi=phiObs, distance=2, inside=False)
 
 flags.updateFromLevelset(phiInit)
 phiInit.subtract(phiObs)
